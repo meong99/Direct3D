@@ -66,6 +66,8 @@ using Vec3		= DirectX::SimpleMath::Vector3;
 using Vec4		= DirectX::SimpleMath::Vector4;
 using Matrix	= DirectX::SimpleMath::Matrix;
 
+extern ComPtr<ID3D12Device>		g_device;
+
 struct WinInfo
 {
 	HWND	hwnd;
@@ -98,6 +100,5 @@ enum
 	SWAP_CHAIN_BUFFER_COUNT = 2,
 	CBV_REGISTER_COUNT = CBV_REGISTER::END,
 	TOTAL_REGISTER_COUNT = CBV_REGISTER_COUNT,
-	CONST_BUFFER_COUNT = CBV_REGISTER_COUNT * 5,
 	TABLE_HEAP_COUNT = TOTAL_REGISTER_COUNT * 5,
 };

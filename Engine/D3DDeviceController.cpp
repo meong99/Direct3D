@@ -1,8 +1,11 @@
 #include "pch.h"
 #include "D3DDeviceController.h"
+#include "ConstantResource.h"
 
 D3DDeviceController::D3DDeviceController()
-{}
+{
+	_constantResource = make_shared<ConstantResource>();
+}
 
 D3DDeviceController::~D3DDeviceController()
 {
@@ -25,13 +28,14 @@ void D3DDeviceController::Init(const WinInfo& info)
 	::D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device));
 	_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence));
 	_fenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	g_device = _device;
 
 	CreateCommandObject();
 	CreateSwapChain();
 	CreateRTV();
 	CreateDSV();
 	CreateRootSignature();
-	CreateConstant();
+	_constantResource->CreateConstant(CBV_REGISTER::b0, sizeof(Transform), 256);
 	CreateTableDescHeap();
 	CreateVertex();
 	CreateIndex();
@@ -110,11 +114,12 @@ void D3DDeviceController::CreateRTV()
 	_device->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&_rtvHeap));
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapBegin = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-	int32 rtvIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	_rtvIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	_CBV_SRV_UAV_IncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (int i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
 	{
-		_rtvHeapHandle[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeapBegin, i * rtvIncrementSize);
+		_rtvHeapHandle[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeapBegin, i * _rtvIncrementSize);
 		_device->CreateRenderTargetView(_rtvBuffer[i].Get(), nullptr, _rtvHeapHandle[i]);
 	}
 }
@@ -164,43 +169,6 @@ void D3DDeviceController::CreateRootSignature()
 	_device->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
 }
 
-void D3DDeviceController::CreateConstant()
-{
-	_constBufferElementSize = (sizeof(Transform) + 255) & ~255;
-	_constBufferElementCount = CONST_BUFFER_COUNT;
-
-	uint32	bufferSize = _constBufferElementSize * _constBufferElementCount;
-	D3D12_HEAP_PROPERTIES	properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	D3D12_RESOURCE_DESC		resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-
-	_device->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE, &resDesc,
-									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-									IID_PPV_ARGS(&_constBuffer));
-	_constBuffer->Map(0, nullptr, reinterpret_cast<void**>(&_constMappedBuffer));
-
-	D3D12_DESCRIPTOR_HEAP_DESC	cbvHeapDesc = {};
-
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	cbvHeapDesc.NumDescriptors = _constBufferElementCount;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-
-	_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&_cbvHeap));
-
-	_cbvHandleBegin = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
-	_cbvHandleIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (uint32 i = 0; i < _constBufferElementCount; i++)
-	{
-		D3D12_CPU_DESCRIPTOR_HANDLE		cbvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(_cbvHandleBegin, i * _cbvHandleIncrementSize);
-		D3D12_CONSTANT_BUFFER_VIEW_DESC	cbvDesc = {};
-
-		cbvDesc.BufferLocation = _constBuffer->GetGPUVirtualAddress() + static_cast<uint64>(_constBufferElementSize) * i;
-		cbvDesc.SizeInBytes = _constBufferElementSize;
-
-		_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
-	}
-}
-
 void D3DDeviceController::CreateTableDescHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC	tableHeapDesc = {};
@@ -212,7 +180,7 @@ void D3DDeviceController::CreateTableDescHeap()
 	_device->CreateDescriptorHeap(&tableHeapDesc, IID_PPV_ARGS(&_tableDescHeap));
 
 	_tableElementCount = TABLE_HEAP_COUNT;
-	_tableElementSize = _cbvHandleIncrementSize * TOTAL_REGISTER_COUNT;
+	_tableElementSize = _CBV_SRV_UAV_IncrementSize * TOTAL_REGISTER_COUNT;
 }
 
 void D3DDeviceController::CreateVertex()
@@ -393,32 +361,11 @@ void D3DDeviceController::MeshRender(void*	data, uint32 size)
 	_cmdList->IASetVertexBuffers(0, 1, &_vertexBufferView);
 	_cmdList->IASetIndexBuffer(&_indexBufferView);
 
-	CopyDataToConstBuffer(data, size);
+	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
+	_constantResource->CopyDataToConstBuffer(data, size, tableHeapHandle, _currentTableIndex * _tableElementSize);
 	CopyDataToTable();
 
 	_cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
-}
-
-void D3DDeviceController::CopyDataToConstBuffer(void* data, uint32 size)
-{
-	assert(_constBufferCurrentIndex < _constBufferElementCount);
-	assert(_constBufferElementSize == ((size + 255) & ~255));
-
-	::memcpy(&_constMappedBuffer[_constBufferCurrentIndex * _constBufferElementSize], data, size);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE	cbvHandle = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
-
-	cbvHandle.ptr += (size_t)_constBufferCurrentIndex * _cbvHandleIncrementSize;
-	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-
-	uint32	destRange = 1;
-	uint32	srcRange = 1;
-
-	_device->CopyDescriptors(1, &tableHeapHandle, &destRange, 1, &cbvHandle, &srcRange,
-							D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	_constBufferCurrentIndex++;
 }
 
 void D3DDeviceController::CopyDataToTable()
@@ -453,7 +400,7 @@ void	D3DDeviceController::RenderEnd()
 void D3DDeviceController::ClearHeapIndex()
 {
 	_currentTableIndex = 0;
-	_constBufferCurrentIndex = 0;
+	_constantResource->ClearIndex();
 	_backBufferIndex = (_backBufferIndex + 1) % SWAP_CHAIN_BUFFER_COUNT;
 }
 

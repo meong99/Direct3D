@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConstantResource.h" />
     <ClInclude Include="D3DDeviceController.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DirectXTex.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="SimpleMath.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConstantResource.cpp" />
     <ClCompile Include="D3DDeviceController.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="EnginePch.cpp" />

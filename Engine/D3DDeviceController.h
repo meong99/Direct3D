@@ -48,7 +48,6 @@ private:
 	void	CreateRTV();
 	void	CreateDSV();
 	void	CreateRootSignature();
-	void	CreateConstant();
 	void	CreateTableDescHeap();
 	void	CreateVertex();
 	void	CreateIndex();
@@ -60,7 +59,6 @@ private:
 	 */
 	void	RenderBegin();
 	void	MeshRender(void* data, uint32 size);
-	void	CopyDataToConstBuffer(void*	data, uint32 size);
 	void	CopyDataToTable();
 	void	WaitSync();
 	void	RenderEnd();
@@ -112,6 +110,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
 	D3D12_CPU_DESCRIPTOR_HANDLE		_rtvHeapHandle[SWAP_CHAIN_BUFFER_COUNT];
 	uint32							_backBufferIndex = 0;
+	uint32							_rtvIncrementSize = 0;
 
 	/*
 	 * DSV
@@ -129,14 +128,8 @@ private:
 	/*
 	 * Constant
 	 */
-	ComPtr<ID3D12Resource>			_constBuffer;
-	BYTE*							_constMappedBuffer = nullptr;
-	uint32							_constBufferElementSize = 0;
-	uint32							_constBufferElementCount = 0;
-	uint32							_constBufferCurrentIndex = 0;
-	ComPtr<ID3D12DescriptorHeap>	_cbvHeap;
-	D3D12_CPU_DESCRIPTOR_HANDLE		_cbvHandleBegin = {};
-	uint32							_cbvHandleIncrementSize = 0;
+	shared_ptr<class ConstantResource>	_constantResource = nullptr;
+	uint32								_CBV_SRV_UAV_IncrementSize = 0;
 
 	/*
 	 *  TableDescHeap

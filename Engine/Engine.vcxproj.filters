@@ -42,6 +42,9 @@
     <ClInclude Include="D3DDeviceController.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ConstantResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -57,6 +60,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="D3DDeviceController.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantResource.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
