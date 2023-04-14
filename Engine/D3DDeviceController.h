@@ -1,5 +1,15 @@
 #pragma once
 
+/*
+ *  Mesh안에 Material이 있어야 하고
+ *	Mesh Rendering 할 때 data와 size를 받는데 이 부분이 CONSTANT_BUFFER_TYPE에 맞아야 한다.
+ *	즉 Mesh클래스를 별도로 파야한다.
+ */
+
+class Material;
+class ConstantResource;
+class Mesh;
+
 enum class KEY_TYPE
 {
 	UP = VK_UP,
@@ -28,6 +38,18 @@ enum
 	KEY_STATE_COUNT = static_cast<int32>(KEY_STATE::END),
 };
 
+enum class CONSTANT_BUFFER_TYPE : uint8
+{
+	TRANSFORM,
+	MATERIAL,
+	END
+};
+
+enum
+{
+	CONSTANT_BUFFER_COUNT = static_cast<uint8>(CONSTANT_BUFFER_TYPE::END)
+};
+
 class D3DDeviceController
 {
 public:
@@ -48,21 +70,26 @@ private:
 	void	CreateRTV();
 	void	CreateDSV();
 	void	CreateRootSignature();
+	void	CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count);
 	void	CreateTableDescHeap();
-	void	CreateVertex();
-	void	CreateIndex();
-	ComPtr<ID3DBlob>	CreateShader(const wstring& path, const string& name, const string& version);
+	shared_ptr<Material>&	CreateMaterial(ShaderInfo shaderInfo);
+	void	CreateMesh(shared_ptr<Material>& material, vector<Vertex> vertex, vector<uint32> index);
 	void	CreatePOS();
-
+	
 	/*
 	 *  Rendering
 	 */
 	void	RenderBegin();
-	void	MeshRender(void* data, uint32 size);
+	void	MeshRender(shared_ptr<Mesh> mesh, void* data, uint32 size);
 	void	CopyDataToTable();
 	void	WaitSync();
 	void	RenderEnd();
 	void	ClearHeapIndex();
+
+	/*
+	 * Access
+	 */
+	shared_ptr<ConstantResource>	GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
 
 	/*
 	 *  Key and Timer
@@ -80,7 +107,7 @@ private:
 	 * Variable
 	 */
 
-	WinInfo	_winInfo;
+	WinInfo			_winInfo;
 	D3D12_VIEWPORT	_viewport;
 	D3D12_RECT		_scissorRect;
 	/*
@@ -128,8 +155,8 @@ private:
 	/*
 	 * Constant
 	 */
-	shared_ptr<class ConstantResource>	_constantResource = nullptr;
-	uint32								_CBV_SRV_UAV_IncrementSize = 0;
+	vector<shared_ptr<ConstantResource>>	_constantResource;
+	uint32									_CBV_SRV_UAV_IncrementSize = 0;
 
 	/*
 	 *  TableDescHeap
@@ -139,24 +166,17 @@ private:
 	uint32							_tableElementCount = 0;
 	uint32							_currentTableIndex = 0;
 
+	/*
+	 * Mesh And Material
+	 */
+	vector<shared_ptr<Mesh>>		_meshes;
+	vector<shared_ptr<Material>>	_materials;
+	ComPtr<ID3DBlob>				_vsBlob;
+	ComPtr<ID3DBlob>				_psBlob;
 
 	/*
-	 * Mesh
+	 *	PipeLine
 	 */
-	ComPtr<ID3D12Resource>		_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW	_vertexBufferView = {};
-	uint32						_vertexCount = 0;
-	ComPtr<ID3D12Resource>		_indexBuffer;
-	D3D12_INDEX_BUFFER_VIEW		_indexBufferView = {};
-	uint32						_indexCount = 0;
-
-	/*
-	 *	Shader
-	 */
-	ComPtr<ID3DBlob>					_vsBlob;
-	ComPtr<ID3DBlob>					_psBlob;
-	ComPtr<ID3DBlob>					_errBlob;
-
 	ComPtr<ID3D12PipelineState>			_pipelineState;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC  _pipelineDesc = {};
 

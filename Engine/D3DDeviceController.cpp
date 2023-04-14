@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "D3DDeviceController.h"
 #include "ConstantResource.h"
+#include "Material.h"
+#include "Mesh.h"
 
 D3DDeviceController::D3DDeviceController()
 {
-	_constantResource = make_shared<ConstantResource>();
 }
 
 D3DDeviceController::~D3DDeviceController()
@@ -35,12 +36,28 @@ void D3DDeviceController::Init(const WinInfo& info)
 	CreateRTV();
 	CreateDSV();
 	CreateRootSignature();
-	_constantResource->CreateConstant(CBV_REGISTER::b0, sizeof(Transform), 256);
+	CreateConstant(CBV_REGISTER::b0, sizeof(Transform), 256);
 	CreateTableDescHeap();
-	CreateVertex();
-	CreateIndex();
-	_vsBlob = CreateShader(L"Engine/default.hlsli", "VS_Main", "vs_5_0");
-	_psBlob = CreateShader(L"Engine/default.hlsli", "PS_Main", "ps_5_0");
+
+	vector<Vertex> vertex_buffer(4);
+
+	vertex_buffer[0].pos = Vec3(-0.5f, 0.5f, 0.0f);
+	vertex_buffer[1].pos = Vec3(0.5f, 0.5f, 0.0f);
+	vertex_buffer[2].pos = Vec3(0.5f, -0.5f, 0.0f);
+	vertex_buffer[3].pos = Vec3(-0.5f, -0.5f, 0.0f);
+	vertex_buffer[0].color = Vec4(1.f, 0.f, 0.f, 1.f);
+	vertex_buffer[1].color = Vec4(0.f, 1.f, 0.f, 1.f);
+	vertex_buffer[2].color = Vec4(0.f, 0.f, 1.f, 1.f);
+	vertex_buffer[3].color = Vec4(1.f, 0.f, 0.f, 1.f);
+	vector<uint32> indexBuffer = 
+	{
+		0, 1, 2,
+		0, 2, 3
+	};
+	ShaderInfo	shaderInfo = {L"Engine/default.hlsli", "VS_Main", "vs_5_0", "PS_Main", "ps_5_0"};
+	shared_ptr<Material> material = CreateMaterial(shaderInfo);
+	CreateMesh(material, vertex_buffer, indexBuffer);
+
 	CreatePOS();
 
 	_states.resize(KEY_TYPE_COUNT, KEY_STATE::NONE);
@@ -169,6 +186,18 @@ void D3DDeviceController::CreateRootSignature()
 	_device->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
 }
 
+void D3DDeviceController::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count)
+{
+	uint32	typeint = static_cast<uint32>(reg);
+
+	assert(typeint == _constantResource.size());
+
+	shared_ptr<ConstantResource>	buffer = make_shared<ConstantResource>();
+
+	buffer->CreateConstant(reg, size, count);
+	_constantResource.push_back(buffer);
+}
+
 void D3DDeviceController::CreateTableDescHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC	tableHeapDesc = {};
@@ -183,89 +212,27 @@ void D3DDeviceController::CreateTableDescHeap()
 	_tableElementSize = _CBV_SRV_UAV_IncrementSize * TOTAL_REGISTER_COUNT;
 }
 
-void D3DDeviceController::CreateVertex()
+shared_ptr<Material>& D3DDeviceController::CreateMaterial(ShaderInfo shaderInfo)
 {
-	vector<Vertex> vertex_buffer(4);
+	shared_ptr<Material>	material = make_shared<Material>();
 
-	vertex_buffer[0].pos = Vec3(-0.5f, 0.5f, 0.0f);
-	vertex_buffer[1].pos = Vec3(0.5f, 0.5f, 0.0f);
-	vertex_buffer[2].pos = Vec3(0.5f, -0.5f, 0.0f);
-	vertex_buffer[3].pos = Vec3(-0.5f, -0.5f, 0.0f);
-	vertex_buffer[0].color = Vec4(1.f, 0.f, 0.f, 1.f);
-	vertex_buffer[1].color = Vec4(0.f, 1.f, 0.f, 1.f);
-	vertex_buffer[2].color = Vec4(0.f, 0.f, 1.f, 1.f);
-	vertex_buffer[3].color = Vec4(1.f, 0.f, 0.f, 1.f);
+	_vsBlob = material->CreateShader(shaderInfo.path, shaderInfo.verTexName, shaderInfo.verTexVersion);
+	_psBlob = material->CreateShader(shaderInfo.path, shaderInfo.indexName, shaderInfo.indexVersion);
 
-	_vertexCount = static_cast<uint32>(vertex_buffer.size());
-	uint32 bufferSize = _vertexCount * sizeof(Vertex);
+	_materials.push_back(material);
 
-	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-
-	_device->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
-									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, 
-									IID_PPV_ARGS(&_vertexBuffer));
-	void* vertexDataBuffer = nullptr;
-	CD3DX12_RANGE readRange(0, 0);
-
-	_vertexBuffer->Map(0, &readRange, &vertexDataBuffer);
-	::memcpy(vertexDataBuffer, &vertex_buffer[0], bufferSize);
-	_vertexBuffer->Unmap(0, nullptr);
-
-	_vertexBufferView.BufferLocation = _vertexBuffer->GetGPUVirtualAddress();
-	_vertexBufferView.StrideInBytes = sizeof(Vertex);
-	_vertexBufferView.SizeInBytes = bufferSize;
+	return material;
 }
 
-void D3DDeviceController::CreateIndex()
+void D3DDeviceController::CreateMesh(shared_ptr<Material>& material, vector<Vertex> vertex, vector<uint32> index)
 {
-	vector<uint32> indexBuffer = 
-	{
-		0, 1, 2,
-		0, 2, 3
-	};
+	shared_ptr<Mesh>	mesh = make_shared<Mesh>();
 
-	_indexCount = static_cast<uint32>(indexBuffer.size());
-	uint32 bufferSize = _indexCount * sizeof(Vertex);
+	mesh->CreateVertex(vertex);
+	mesh->CreateIndex(index);
+	mesh->SetMaterial(material);
 
-	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-
-	_device->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
-									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, 
-									IID_PPV_ARGS(&_indexBuffer));
-	void* vertexDataBuffer = nullptr;
-	CD3DX12_RANGE readRange(0, 0);
-
-	_indexBuffer->Map(0, &readRange, &vertexDataBuffer);
-	::memcpy(vertexDataBuffer, &indexBuffer[0], bufferSize);
-	_indexBuffer->Unmap(0, nullptr);
-
-	_indexBufferView.BufferLocation = _indexBuffer->GetGPUVirtualAddress();
-	_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	_indexBufferView.SizeInBytes = bufferSize;
-}
-
-ComPtr<ID3DBlob> D3DDeviceController::CreateShader(const wstring& path, const string& name, const string& version)
-{
-	uint32 compileFlag = 0;
-
-#ifdef _DEBUG
-	compileFlag = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-	ComPtr<ID3DBlob>	byteCode;
-	ComPtr<ID3DBlob>	err;
-
-	HRESULT hr = ::D3DCompileFromFile(path.c_str(), nullptr,
-									  D3D_COMPILE_STANDARD_FILE_INCLUDE,
-									  name.c_str(), version.c_str(), compileFlag,
-									  0, &byteCode, &err);
-	if(err != nullptr)
-		OutputDebugStringA((char*)err->GetBufferPointer());
-	if (FAILED(hr))
-		::MessageBoxA(nullptr, "Shader Create Failed !", nullptr, MB_OK);
-
-	return byteCode;
+	_meshes.push_back(mesh);
 }
 
 void D3DDeviceController::CreatePOS()
@@ -323,7 +290,7 @@ void	D3DDeviceController::Update()
 	if (GetButton(KEY_TYPE::D))
 		t.offset.x += 1.f * _deltaTime;
 
-	MeshRender(&t, sizeof(Transform));
+	MeshRender(_meshes[0], &t, sizeof(Transform));
 
 	RenderEnd();
 }
@@ -355,17 +322,22 @@ void D3DDeviceController::RenderBegin()
 	_cmdList->SetPipelineState(_pipelineState.Get());
 }
 
-void D3DDeviceController::MeshRender(void*	data, uint32 size)
+void D3DDeviceController::MeshRender(shared_ptr<Mesh> mesh, void* data, uint32 size)
 {
+	D3D12_VERTEX_BUFFER_VIEW	vbv = mesh->GetVertexBufferView();
+	D3D12_INDEX_BUFFER_VIEW		ibv = mesh->GetIndexBufferView();
+
 	_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	_cmdList->IASetVertexBuffers(0, 1, &_vertexBufferView);
-	_cmdList->IASetIndexBuffer(&_indexBufferView);
+	_cmdList->IASetVertexBuffers(0, 1, &vbv);
+	_cmdList->IASetIndexBuffer(&ibv);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
-	_constantResource->CopyDataToConstBuffer(data, size, tableHeapHandle, _currentTableIndex * _tableElementSize);
+
+	GetConstantResource(CONSTANT_BUFFER_TYPE::TRANSFORM)->CopyDataToConstBuffer(
+		data, size, tableHeapHandle, static_cast<size_t>(_currentTableIndex) * _tableElementSize);
 	CopyDataToTable();
 
-	_cmdList->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+	_cmdList->DrawIndexedInstanced(mesh->GetindexCount(), 1, 0, 0, 0);
 }
 
 void D3DDeviceController::CopyDataToTable()
@@ -399,8 +371,10 @@ void	D3DDeviceController::RenderEnd()
 
 void D3DDeviceController::ClearHeapIndex()
 {
+	for (const auto& elem : _constantResource)
+		elem->ClearIndex();
+
 	_currentTableIndex = 0;
-	_constantResource->ClearIndex();
 	_backBufferIndex = (_backBufferIndex + 1) % SWAP_CHAIN_BUFFER_COUNT;
 }
 

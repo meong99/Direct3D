@@ -87,6 +87,15 @@ struct Transform
 	Vec4	offset;
 };
 
+struct ShaderInfo
+{
+	wstring	path;
+	string	verTexName;
+	string	verTexVersion;
+	string	indexName;
+	string	indexVersion;
+};
+
 enum class CBV_REGISTER
 {
 	b0,
