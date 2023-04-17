@@ -169,7 +169,7 @@
   <ItemGroup>
     <ClInclude Include="Component.h" />
     <ClInclude Include="ConstantResource.h" />
-    <ClInclude Include="D3DDeviceController.h" />
+    <ClInclude Include="RenderController.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DirectXTex.h" />
     <ClInclude Include="Engine.h" />
@@ -189,7 +189,7 @@
   <ItemGroup>
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ConstantResource.cpp" />
-    <ClCompile Include="D3DDeviceController.cpp" />
+    <ClCompile Include="RenderController.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="EnginePch.cpp" />
     <ClCompile Include="GameObject.cpp" />

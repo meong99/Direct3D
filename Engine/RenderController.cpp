@@ -1,26 +1,25 @@
 #include "pch.h"
-#include "D3DDeviceController.h"
+#include "RenderController.h"
 #include "ConstantResource.h"
 #include "SceneManager.h"
 
 extern WinInfo g_win_info;
 
-D3DDeviceController::D3DDeviceController()
+RenderController::RenderController()
 {
 }
 
-D3DDeviceController::~D3DDeviceController()
+RenderController::~RenderController()
 {
 	::CloseHandle(_fenceEvent);
 }
 
-void D3DDeviceController::Init()
+void RenderController::Init()
 {
-	_winInfo = g_win_info;
-	_viewport = { 0, 0, static_cast<FLOAT>(_winInfo.width), static_cast<FLOAT>(_winInfo.height), 0.0f, 1.0f };
-	_scissorRect = CD3DX12_RECT(0, 0, _winInfo.width, _winInfo.height);
+	_viewport = { 0, 0, static_cast<FLOAT>(g_win_info.width), static_cast<FLOAT>(g_win_info.height), 0.0f, 1.0f };
+	_scissorRect = CD3DX12_RECT(0, 0, g_win_info.width, g_win_info.height);
 
-	ResizeWindow(_winInfo.width, _winInfo.height);
+	ResizeWindow(g_win_info.width, g_win_info.height);
 
 #ifdef DEBUG
 	D3D12GetDebugInterface(IID_PPV_ARGS(&_debug_controller));
@@ -39,24 +38,20 @@ void D3DDeviceController::Init()
 	CreateConstant(CBV_REGISTER::b0, sizeof(TransformMatrix), 256);
 	CreateTableDescHeap();
 
-	_states.resize(KEY_TYPE_COUNT, KEY_STATE::NONE);
-	::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&_frequency));
-	::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_prevCount));
-
 	WaitSync();
 }
 
-void D3DDeviceController::ResizeWindow(int32 width, int32 height)
+void RenderController::ResizeWindow(int32 width, int32 height)
 {
-	_winInfo.width = width;
-	_winInfo.height = height;
+	g_win_info.width = width;
+	g_win_info.height = height;
 
 	RECT rect = { 0, 0, width, height };
 	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-	::SetWindowPos(_winInfo.hwnd, 0, 100, 100, width, height, 0);
+	::SetWindowPos(g_win_info.hwnd, 0, 100, 100, width, height, 0);
 }
 
-void D3DDeviceController::CreateCommandObject()
+void RenderController::CreateCommandObject()
 {
 	D3D12_COMMAND_QUEUE_DESC	cmd_queue_desc = {};
 
@@ -70,14 +65,14 @@ void D3DDeviceController::CreateCommandObject()
 	_cmdList->Close();
 }
 
-void D3DDeviceController::CreateSwapChain()
+void RenderController::CreateSwapChain()
 {
 	_swapChain.Reset();
 
 	DXGI_SWAP_CHAIN_DESC	swap_chain_desc;
 
-	swap_chain_desc.BufferDesc.Width = static_cast<uint32>(_winInfo.width);
-	swap_chain_desc.BufferDesc.Height = static_cast<uint32>(_winInfo.height);
+	swap_chain_desc.BufferDesc.Width = static_cast<uint32>(g_win_info.width);
+	swap_chain_desc.BufferDesc.Height = static_cast<uint32>(g_win_info.height);
 	swap_chain_desc.BufferDesc.RefreshRate.Numerator = 60;
 	swap_chain_desc.BufferDesc.RefreshRate.Denominator = 1;
 	swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -87,8 +82,8 @@ void D3DDeviceController::CreateSwapChain()
 	swap_chain_desc.SampleDesc.Quality = 0;
 	swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swap_chain_desc.BufferCount = SWAP_CHAIN_BUFFER_COUNT;
-	swap_chain_desc.OutputWindow = _winInfo.hwnd;
-	swap_chain_desc.Windowed = _winInfo.windowed;
+	swap_chain_desc.OutputWindow = g_win_info.hwnd;
+	swap_chain_desc.Windowed = g_win_info.windowed;
 	swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swap_chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
@@ -98,7 +93,7 @@ void D3DDeviceController::CreateSwapChain()
 		_swapChain->GetBuffer(i, IID_PPV_ARGS(&_rtvBuffer[i]));
 }
 
-void D3DDeviceController::CreateRTV()
+void RenderController::CreateRTV()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvDesc;
 
@@ -120,10 +115,10 @@ void D3DDeviceController::CreateRTV()
 	}
 }
 
-void D3DDeviceController::CreateDSV()
+void RenderController::CreateDSV()
 {
 	D3D12_HEAP_PROPERTIES	heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	D3D12_RESOURCE_DESC		resDesc = CD3DX12_RESOURCE_DESC::Tex2D(_dsvFormat, _winInfo.width, _winInfo.height);
+	D3D12_RESOURCE_DESC		resDesc = CD3DX12_RESOURCE_DESC::Tex2D(_dsvFormat, g_win_info.width, g_win_info.height);
 
 	resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
@@ -144,7 +139,7 @@ void D3DDeviceController::CreateDSV()
 	_device->CreateDepthStencilView(_dsvBuffer.Get(), nullptr, _dsvHandle);
 }
 
-void D3DDeviceController::CreateRootSignature()
+void RenderController::CreateRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE	range[] =
 	{
@@ -165,7 +160,7 @@ void D3DDeviceController::CreateRootSignature()
 	_device->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
 }
 
-void D3DDeviceController::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count)
+void RenderController::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count)
 {
 	uint32	typeint = static_cast<uint32>(reg);
 
@@ -177,7 +172,7 @@ void D3DDeviceController::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 c
 	_constantResource.push_back(buffer);
 }
 
-void D3DDeviceController::CreateTableDescHeap()
+void RenderController::CreateTableDescHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC	tableHeapDesc = {};
 
@@ -191,7 +186,7 @@ void D3DDeviceController::CreateTableDescHeap()
 	_tableElementSize = _CBV_SRV_UAV_IncrementSize * TOTAL_REGISTER_COUNT;
 }
 
-void	D3DDeviceController::WaitSync()
+void	RenderController::WaitSync()
 {
 	_fenceValue++;
 	_cmdQueue->Signal(_fence.Get(), _fenceValue);
@@ -203,11 +198,8 @@ void	D3DDeviceController::WaitSync()
 	}
 }
 
-void	D3DDeviceController::Update()
+void	RenderController::Update()
 {
-	UpdateKey();
-	UpdateTimer();
-	ShowFPS();
 	RenderBegin();
 
 	GET_SINGLE(SceneManager)->Update();
@@ -215,7 +207,7 @@ void	D3DDeviceController::Update()
 	RenderEnd();
 }
 
-void D3DDeviceController::RenderBegin()
+void RenderController::RenderBegin()
 {
 	_cmdAlloc->Reset();
 	_cmdList->Reset(_cmdAlloc.Get(), nullptr);
@@ -241,7 +233,7 @@ void D3DDeviceController::RenderBegin()
 	_cmdList->OMSetRenderTargets(1, &backBufferView, FALSE, &_dsvHandle);
 }
 
-void D3DDeviceController::CopyDataToTable()
+void RenderController::CopyDataToTable()
 {
 	D3D12_GPU_DESCRIPTOR_HANDLE	tableGPUHabndle = _tableDescHeap->GetGPUDescriptorHandleForHeapStart();
 
@@ -252,7 +244,7 @@ void D3DDeviceController::CopyDataToTable()
 	_currentTableIndex++;
 }
 
-void	D3DDeviceController::RenderEnd()
+void	RenderController::RenderEnd()
 {
 	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		_rtvBuffer[_backBufferIndex].Get(),
@@ -270,80 +262,11 @@ void	D3DDeviceController::RenderEnd()
 	ClearHeapIndex();
 }
 
-void D3DDeviceController::ClearHeapIndex()
+void RenderController::ClearHeapIndex()
 {
 	for (const auto& elem : _constantResource)
 		elem->ClearIndex();
 
 	_currentTableIndex = 0;
 	_backBufferIndex = (_backBufferIndex + 1) % SWAP_CHAIN_BUFFER_COUNT;
-}
-
-void D3DDeviceController::UpdateKey()
-{
-	HWND hwnd = ::GetActiveWindow();
-
-	if (_winInfo.hwnd != hwnd)
-	{
-		for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
-			_states[key] = KEY_STATE::NONE;
-
-		return;
-	}
-
-	BYTE asciiKeys[KEY_TYPE_COUNT] = {};
-
-	if (::GetKeyboardState(asciiKeys) == false)
-		return;
-
-	for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
-	{
-		if (asciiKeys[key] & 0x80)
-		{
-			KEY_STATE& state = _states[key];
-
-			if (state == KEY_STATE::PRESS || state == KEY_STATE::DOWN)
-				state = KEY_STATE::PRESS;
-			else
-				state = KEY_STATE::DOWN;
-		}
-		else
-		{
-			KEY_STATE& state = _states[key];
-
-			if (state == KEY_STATE::PRESS || state == KEY_STATE::DOWN)
-				state = KEY_STATE::UP;
-			else
-				state = KEY_STATE::NONE;
-		}
-	}
-}
-
-void D3DDeviceController::UpdateTimer()
-{
-	uint64 currentCount;
-
-	::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&currentCount));
-
-	_deltaTime = (currentCount - _prevCount) / static_cast<float>(_frequency);
-	_prevCount = currentCount;
-	_frameCount++;
-	_frameTime += _deltaTime;
-
-	if (_frameTime > 1.f)
-	{
-		_fps = static_cast<uint32>(_frameCount / _frameTime);
-		_frameTime = 0.f;
-		_frameCount = 0;
-	}
-}
-
-void D3DDeviceController::ShowFPS()
-{
-	uint32 fps = GetFps();
-
-	WCHAR text[100] = L"";
-
-	::wsprintf(text, L"FPS : %d", fps);
-	::SetWindowText(_winInfo.hwnd, text);
 }

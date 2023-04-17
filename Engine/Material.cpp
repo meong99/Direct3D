@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Material.h"
-#include "D3DDeviceController.h"
+#include "RenderController.h"
 #include "Engine.h"
 
 void Material::CreateShader(ShaderInfo shaderInfo)
@@ -19,7 +19,7 @@ void Material::CreateShader(ShaderInfo shaderInfo)
 	pipelineDesc.InputLayout = { desc, _countof(desc) };
 	pipelineDesc.VS = {_vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize()};
 	pipelineDesc.PS = {_psBlob->GetBufferPointer(), _psBlob->GetBufferSize()};
-	pipelineDesc.pRootSignature = GEngine->GetDevice()->GetRootSig().Get();
+	pipelineDesc.pRootSignature = GEngine->GetRootSig().Get();
 	pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	pipelineDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -28,9 +28,9 @@ void Material::CreateShader(ShaderInfo shaderInfo)
 	pipelineDesc.NumRenderTargets = 1;
 	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	pipelineDesc.SampleDesc.Count = 1;
-	pipelineDesc.DSVFormat =  GEngine->GetDevice()->GetDSVFormat();
+	pipelineDesc.DSVFormat =  GEngine->GetDSVFormat();
 
-	HRESULT hr = GEngine->GetDevice()->GetDevice()->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(_pipelineState.GetAddressOf()));
+	HRESULT hr = GEngine->GetDevice()->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(_pipelineState.GetAddressOf()));
 }
 
 void	Material::CreateVertexShader(ComPtr<ID3DBlob>& blob, const wstring& path, const string& name, const string& version)
@@ -73,5 +73,5 @@ void	Material::CreateIndexShader(ComPtr<ID3DBlob>& blob, const wstring& path, co
 
 void Material::Update()
 {
-	GEngine->GetDevice()->GetCmdList()->SetPipelineState(_pipelineState.Get());
+	GEngine->GetCmdList()->SetPipelineState(_pipelineState.Get());
 }

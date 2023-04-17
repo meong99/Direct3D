@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Mesh.h"
-#include "D3DDeviceController.h"
+#include "RenderController.h"
 #include "Engine.h"
 
 void Mesh::CreateVertexBuffer(vector<Vertex> vertex)
@@ -11,7 +11,7 @@ void Mesh::CreateVertexBuffer(vector<Vertex> vertex)
 	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
-	GEngine->GetDevice()->GetDevice()->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
+	GEngine->GetDevice()->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
 									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, 
 									IID_PPV_ARGS(&_vertexBuffer));
 	void* vertexDataBuffer = nullptr;
@@ -34,7 +34,7 @@ void Mesh::CreateIndexBuffer(vector<uint32> index)
 	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
-	GEngine->GetDevice()->GetDevice()->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
+	GEngine->GetDevice()->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &desc,
 									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, 
 									IID_PPV_ARGS(&_indexBuffer));
 	void* vertexDataBuffer = nullptr;
@@ -51,8 +51,8 @@ void Mesh::CreateIndexBuffer(vector<uint32> index)
 
 void Mesh::Render()
 {
-	GEngine->GetDevice()->GetCmdList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	GEngine->GetDevice()->GetCmdList()->IASetVertexBuffers(0, 1, &_vertexBufferView);
-	GEngine->GetDevice()->GetCmdList()->IASetIndexBuffer(&_indexBufferView);
-	GEngine->GetDevice()->GetCmdList()->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
+	GEngine->GetCmdList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	GEngine->GetCmdList()->IASetVertexBuffers(0, 1, &_vertexBufferView);
+	GEngine->GetCmdList()->IASetIndexBuffer(&_indexBufferView);
+	GEngine->GetCmdList()->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
 }

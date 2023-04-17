@@ -32,7 +32,7 @@
     <ClInclude Include="ConstantResource.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="D3DDeviceController.h">
+    <ClInclude Include="RenderController.h">
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine.h">
@@ -88,7 +88,7 @@
     <ClCompile Include="Engine.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
-    <ClCompile Include="D3DDeviceController.cpp">
+    <ClCompile Include="RenderController.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
     <ClCompile Include="ConstantResource.cpp">

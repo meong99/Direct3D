@@ -2,44 +2,9 @@
 
 /*
  *	Mesh Rendering 할 때 data와 size를 받는데 이 부분이 CONSTANT_BUFFER_TYPE에 맞아야 한다.
- *	pipelineDesc static인 상태임
  */
 
-class Material;
 class ConstantResource;
-class Mesh;
-class GameObject;
-class MeshRenderer;
-class Transform;
-class Component;
-
-enum class KEY_TYPE
-{
-	UP = VK_UP,
-	DOWN = VK_DOWN,
-	LEFT = VK_LEFT,
-	RIGHT = VK_RIGHT,
-
-	W = 'W',
-	A = 'A',
-	S = 'S',
-	D = 'D',
-};
-
-enum class KEY_STATE
-{
-	NONE,
-	PRESS,
-	DOWN,
-	UP,
-	END
-};
-
-enum
-{
-	KEY_TYPE_COUNT = static_cast<int32>(UINT8_MAX + 1),
-	KEY_STATE_COUNT = static_cast<int32>(KEY_STATE::END),
-};
 
 enum class CONSTANT_BUFFER_TYPE : uint8
 {
@@ -53,25 +18,28 @@ enum
 	CONSTANT_BUFFER_COUNT = static_cast<uint8>(CONSTANT_BUFFER_TYPE::END)
 };
 
-class D3DDeviceController
+class RenderController
 {
 public:
-	D3DDeviceController();
-	~D3DDeviceController();
+	RenderController();
+	~RenderController();
 
 	void	Init();
 	void	Update();
+
+	void	ResizeWindow(int32 width, int32 height);
+
 	ComPtr<ID3D12Device>&				GetDevice() { return	_device; }
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _cmdList; }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _rootSignature; }
 	DXGI_FORMAT&						GetDSVFormat() { return _dsvFormat; }
 
 private:
+
 	/*
 	 *  Initialize
 	 */
 
-	void	ResizeWindow(int32 width, int32 height);
 	void	CreateCommandObject();
 	void	CreateSwapChain();
 	void	CreateRTV();
@@ -94,30 +62,16 @@ private:
 	 */
 	shared_ptr<ConstantResource>	GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
 
-	/*
-	 *  Key and Timer
-	 */
-	void				UpdateKey();
-	void				UpdateTimer();
-	void				ShowFPS();
-	bool				GetButton(KEY_TYPE key) { return GetState(key) == KEY_STATE::PRESS; }
-	bool				GetButtonDown(KEY_TYPE key) { return GetState(key) == KEY_STATE::DOWN; }
-	bool				GetButtonUp(KEY_TYPE key) { return GetState(key) == KEY_STATE::UP; }
-	inline KEY_STATE	GetState(KEY_TYPE key) { return _states[static_cast<uint8>(key)]; }
 
-
-	/*
-	 * Variable
-	 */
-
-	WinInfo			_winInfo;
+	
 	D3D12_VIEWPORT	_viewport;
 	D3D12_RECT		_scissorRect;
+
 	/*
-	 * D3DDeviceController
+	 * RenderController
 	 */
-	ComPtr<ID3D12Debug>			_debugController;
-	ComPtr<IDXGIFactory>		_dxgi;
+	ComPtr<ID3D12Debug>		_debugController;
+	ComPtr<IDXGIFactory>	_dxgi;
 	ComPtr<ID3D12Device>	_device;
 
 	/*
@@ -169,30 +123,5 @@ private:
 	uint32							_tableElementCount = 0;
 	uint32							_currentTableIndex = 0;
 
-	/*
-	 * Mesh And Material
-	 */
-	vector<shared_ptr<Mesh>>		_meshes;
-	vector<shared_ptr<Material>>	_materials;
-
-	/*
-	 *  Object
-	 */
-	vector<shared_ptr<GameObject>>	_gameObjects;
-
-	/*
-	 * Key and Timer
-	 */
-
-	uint32	GetFps() { return _fps; }
-	float	GetDeltaTime() { return _deltaTime; }
-
-	vector<KEY_STATE>	_states;
-	uint64	_frequency = 0;
-	uint64	_prevCount = 0;
-	float	_deltaTime = 0.f;
-	uint32	_frameCount = 0;
-	float	_frameTime = 0.f;
-	uint32	_fps = 0;
 };
 
