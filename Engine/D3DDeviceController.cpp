@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "D3DDeviceController.h"
 #include "ConstantResource.h"
-#include "Material.h"
-#include "Mesh.h"
+#include "SceneManager.h"
+
+extern WinInfo g_win_info;
 
 D3DDeviceController::D3DDeviceController()
 {
@@ -13,13 +14,13 @@ D3DDeviceController::~D3DDeviceController()
 	::CloseHandle(_fenceEvent);
 }
 
-void D3DDeviceController::Init(const WinInfo& info)
+void D3DDeviceController::Init()
 {
-	_winInfo = info;
-	_viewport = { 0, 0, static_cast<FLOAT>(info.width), static_cast<FLOAT>(info.height), 0.0f, 1.0f };
-	_scissorRect = CD3DX12_RECT(0, 0, info.width, info.height);
+	_winInfo = g_win_info;
+	_viewport = { 0, 0, static_cast<FLOAT>(_winInfo.width), static_cast<FLOAT>(_winInfo.height), 0.0f, 1.0f };
+	_scissorRect = CD3DX12_RECT(0, 0, _winInfo.width, _winInfo.height);
 
-	ResizeWindow(info.width, info.height);
+	ResizeWindow(_winInfo.width, _winInfo.height);
 
 #ifdef DEBUG
 	D3D12GetDebugInterface(IID_PPV_ARGS(&_debug_controller));
@@ -29,36 +30,14 @@ void D3DDeviceController::Init(const WinInfo& info)
 	::D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device));
 	_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence));
 	_fenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	g_device = _device;
 
 	CreateCommandObject();
 	CreateSwapChain();
 	CreateRTV();
 	CreateDSV();
 	CreateRootSignature();
-	CreateConstant(CBV_REGISTER::b0, sizeof(Transform), 256);
+	CreateConstant(CBV_REGISTER::b0, sizeof(TransformMatrix), 256);
 	CreateTableDescHeap();
-
-	vector<Vertex> vertex_buffer(4);
-
-	vertex_buffer[0].pos = Vec3(-0.5f, 0.5f, 0.0f);
-	vertex_buffer[1].pos = Vec3(0.5f, 0.5f, 0.0f);
-	vertex_buffer[2].pos = Vec3(0.5f, -0.5f, 0.0f);
-	vertex_buffer[3].pos = Vec3(-0.5f, -0.5f, 0.0f);
-	vertex_buffer[0].color = Vec4(1.f, 0.f, 0.f, 1.f);
-	vertex_buffer[1].color = Vec4(0.f, 1.f, 0.f, 1.f);
-	vertex_buffer[2].color = Vec4(0.f, 0.f, 1.f, 1.f);
-	vertex_buffer[3].color = Vec4(1.f, 0.f, 0.f, 1.f);
-	vector<uint32> indexBuffer = 
-	{
-		0, 1, 2,
-		0, 2, 3
-	};
-	ShaderInfo	shaderInfo = {L"Engine/default.hlsli", "VS_Main", "vs_5_0", "PS_Main", "ps_5_0"};
-	shared_ptr<Material> material = CreateMaterial(shaderInfo);
-	CreateMesh(material, vertex_buffer, indexBuffer);
-
-	CreatePOS();
 
 	_states.resize(KEY_TYPE_COUNT, KEY_STATE::NONE);
 	::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&_frequency));
@@ -212,54 +191,6 @@ void D3DDeviceController::CreateTableDescHeap()
 	_tableElementSize = _CBV_SRV_UAV_IncrementSize * TOTAL_REGISTER_COUNT;
 }
 
-shared_ptr<Material>& D3DDeviceController::CreateMaterial(ShaderInfo shaderInfo)
-{
-	shared_ptr<Material>	material = make_shared<Material>();
-
-	_vsBlob = material->CreateShader(shaderInfo.path, shaderInfo.verTexName, shaderInfo.verTexVersion);
-	_psBlob = material->CreateShader(shaderInfo.path, shaderInfo.indexName, shaderInfo.indexVersion);
-
-	_materials.push_back(material);
-
-	return material;
-}
-
-void D3DDeviceController::CreateMesh(shared_ptr<Material>& material, vector<Vertex> vertex, vector<uint32> index)
-{
-	shared_ptr<Mesh>	mesh = make_shared<Mesh>();
-
-	mesh->CreateVertex(vertex);
-	mesh->CreateIndex(index);
-	mesh->SetMaterial(material);
-
-	_meshes.push_back(mesh);
-}
-
-void D3DDeviceController::CreatePOS()
-{
-	D3D12_INPUT_ELEMENT_DESC desc[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	_pipelineDesc.InputLayout = { desc, _countof(desc) };
-	_pipelineDesc.VS = { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
-	_pipelineDesc.PS = { _psBlob->GetBufferPointer(), _psBlob->GetBufferSize() };
-	_pipelineDesc.pRootSignature = _rootSignature.Get();
-	_pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	_pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	_pipelineDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	_pipelineDesc.DSVFormat = _dsvFormat;
-	_pipelineDesc.SampleMask = UINT_MAX;
-	_pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	_pipelineDesc.NumRenderTargets = 1;
-	_pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	_pipelineDesc.SampleDesc.Count = 1;
-
-	HRESULT hr = _device->CreateGraphicsPipelineState(&_pipelineDesc, IID_PPV_ARGS(&_pipelineState));
-}
-
 void	D3DDeviceController::WaitSync()
 {
 	_fenceValue++;
@@ -279,18 +210,7 @@ void	D3DDeviceController::Update()
 	ShowFPS();
 	RenderBegin();
 
-	static Transform t = {};
-
-	if (GetButton(KEY_TYPE::W))
-		t.offset.y += 1.f * _deltaTime;
-	if (GetButton(KEY_TYPE::S))
-		t.offset.y -= 1.f * _deltaTime;
-	if (GetButton(KEY_TYPE::A))
-		t.offset.x -= 1.f * _deltaTime;
-	if (GetButton(KEY_TYPE::D))
-		t.offset.x += 1.f * _deltaTime;
-
-	MeshRender(_meshes[0], &t, sizeof(Transform));
+	GET_SINGLE(SceneManager)->Update();
 
 	RenderEnd();
 }
@@ -319,25 +239,6 @@ void D3DDeviceController::RenderBegin()
 	_cmdList->ClearRenderTargetView(backBufferView, Colors::LightSteelBlue, 0, nullptr);
 	_cmdList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	_cmdList->OMSetRenderTargets(1, &backBufferView, FALSE, &_dsvHandle);
-	_cmdList->SetPipelineState(_pipelineState.Get());
-}
-
-void D3DDeviceController::MeshRender(shared_ptr<Mesh> mesh, void* data, uint32 size)
-{
-	D3D12_VERTEX_BUFFER_VIEW	vbv = mesh->GetVertexBufferView();
-	D3D12_INDEX_BUFFER_VIEW		ibv = mesh->GetIndexBufferView();
-
-	_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	_cmdList->IASetVertexBuffers(0, 1, &vbv);
-	_cmdList->IASetIndexBuffer(&ibv);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
-
-	GetConstantResource(CONSTANT_BUFFER_TYPE::TRANSFORM)->CopyDataToConstBuffer(
-		data, size, tableHeapHandle, static_cast<size_t>(_currentTableIndex) * _tableElementSize);
-	CopyDataToTable();
-
-	_cmdList->DrawIndexedInstanced(mesh->GetindexCount(), 1, 0, 0, 0);
 }
 
 void D3DDeviceController::CopyDataToTable()

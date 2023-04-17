@@ -1,14 +1,17 @@
 #pragma once
 
 /*
- *  Mesh안에 Material이 있어야 하고
  *	Mesh Rendering 할 때 data와 size를 받는데 이 부분이 CONSTANT_BUFFER_TYPE에 맞아야 한다.
- *	즉 Mesh클래스를 별도로 파야한다.
+ *	pipelineDesc static인 상태임
  */
 
 class Material;
 class ConstantResource;
 class Mesh;
+class GameObject;
+class MeshRenderer;
+class Transform;
+class Component;
 
 enum class KEY_TYPE
 {
@@ -56,8 +59,12 @@ public:
 	D3DDeviceController();
 	~D3DDeviceController();
 
-	void	Init(const WinInfo& win_info);
+	void	Init();
 	void	Update();
+	ComPtr<ID3D12Device>&				GetDevice() { return	_device; }
+	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _cmdList; }
+	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _rootSignature; }
+	DXGI_FORMAT&						GetDSVFormat() { return _dsvFormat; }
 
 private:
 	/*
@@ -72,15 +79,11 @@ private:
 	void	CreateRootSignature();
 	void	CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count);
 	void	CreateTableDescHeap();
-	shared_ptr<Material>&	CreateMaterial(ShaderInfo shaderInfo);
-	void	CreateMesh(shared_ptr<Material>& material, vector<Vertex> vertex, vector<uint32> index);
-	void	CreatePOS();
 	
 	/*
 	 *  Rendering
 	 */
 	void	RenderBegin();
-	void	MeshRender(shared_ptr<Mesh> mesh, void* data, uint32 size);
 	void	CopyDataToTable();
 	void	WaitSync();
 	void	RenderEnd();
@@ -115,7 +118,7 @@ private:
 	 */
 	ComPtr<ID3D12Debug>			_debugController;
 	ComPtr<IDXGIFactory>		_dxgi;
-	ComPtr<ID3D12Device>		_device;
+	ComPtr<ID3D12Device>	_device;
 
 	/*
 	 * Command Queue
@@ -171,14 +174,11 @@ private:
 	 */
 	vector<shared_ptr<Mesh>>		_meshes;
 	vector<shared_ptr<Material>>	_materials;
-	ComPtr<ID3DBlob>				_vsBlob;
-	ComPtr<ID3DBlob>				_psBlob;
 
 	/*
-	 *	PipeLine
+	 *  Object
 	 */
-	ComPtr<ID3D12PipelineState>			_pipelineState;
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC  _pipelineDesc = {};
+	vector<shared_ptr<GameObject>>	_gameObjects;
 
 	/*
 	 * Key and Timer

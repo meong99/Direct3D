@@ -12,12 +12,12 @@ Engine::~Engine()
 {
 }
 
-void Engine::Init(const WinInfo& win_info)
+void Engine::Init()
 {
-	_device->Init(win_info);
+	_device->Init();
 }
 
-void	Engine::Updata(const WinInfo& win_info)
+void	Engine::Update()
 {
 	_device->Update();
 }

@@ -1,4 +1,5 @@
 #include "pch.h"
 #include "EnginePch.h"
+#include "Engine.h"
 
-ComPtr<ID3D12Device>		g_device;
+unique_ptr<Engine> GEngine = make_unique<Engine>();

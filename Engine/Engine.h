@@ -8,9 +8,10 @@ class Engine
 public:
 	Engine();
 	~Engine();
-	void	Init(const WinInfo& win_info);
-	void	Updata(const WinInfo& win_info);
+	void	Init();
+	void	Update();
 
+	shared_ptr<D3DDeviceController>&	GetDevice() { return _device; }
 private:
 
 	shared_ptr<D3DDeviceController>	_device;

@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "framework.h"
 #include "Direct3D.h"
+#include "Game.h"
 #include "Engine.h"
 
 #define MAX_LOADSTRING 100
@@ -9,7 +10,7 @@
 HINSTANCE   hInst;                                // 현재 인스턴스입니다.
 WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-WinInfo     g_win_info;
+WinInfo     g_win_info = {};
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -42,13 +43,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-    shared_ptr<Engine>  engine = make_shared<Engine>();
-
     g_win_info.width = 800;
     g_win_info.height = 600;
     g_win_info.windowed = true;
 
-    engine->Init(g_win_info);
+    Game    game;
+    game.Init();
     // 기본 메시지 루프입니다:
     while (true)
     {
@@ -62,7 +62,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	            DispatchMessage(&msg);
 	        }
         }
-        engine->Updata(g_win_info);
+        game.Update();
     }
 
     return (int) msg.wParam;

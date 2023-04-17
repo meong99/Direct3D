@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "ConstantResource.h"
+#include "Engine.h"
+#include "D3DDeviceController.h"
 
 void ConstantResource::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count)
 {
@@ -11,7 +13,7 @@ void ConstantResource::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 coun
 	D3D12_HEAP_PROPERTIES	properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	D3D12_RESOURCE_DESC		resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
-	g_device->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE, &resDesc,
+	GEngine->GetDevice()->GetDevice()->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE, &resDesc,
 									D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 									IID_PPV_ARGS(&_constBuffer));
 	_constBuffer->Map(0, nullptr, reinterpret_cast<void**>(&_constMappedBuffer));
@@ -22,10 +24,10 @@ void ConstantResource::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 coun
 	cbvHeapDesc.NumDescriptors = _constBufferElementCount;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
-	g_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&_cbvHeap));
+	GEngine->GetDevice()->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&_cbvHeap));
 
 	_cbvHandleBegin = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
-	_cbvHandleIncrementSize = g_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	_cbvHandleIncrementSize = GEngine->GetDevice()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (uint32 i = 0; i < _constBufferElementCount; i++)
 	{
@@ -35,7 +37,7 @@ void ConstantResource::CreateConstant(CBV_REGISTER reg, uint32 size, uint32 coun
 		cbvDesc.BufferLocation = _constBuffer->GetGPUVirtualAddress() + static_cast<uint64>(_constBufferElementSize) * i;
 		cbvDesc.SizeInBytes = _constBufferElementSize;
 
-		g_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
+		GEngine->GetDevice()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHandle);
 	}
 }
 
@@ -60,7 +62,7 @@ void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size, D3D12_CPU_
 	uint32	destRange = 1;
 	uint32	srcRange = 1;
 
-	g_device->CopyDescriptors(1, &tableHeapHandle, &destRange, 1, &cbvHandle, &srcRange,
+	GEngine->GetDevice()->GetDevice()->CopyDescriptors(1, &tableHeapHandle, &destRange, 1, &cbvHandle, &srcRange,
 							D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	_constBufferCurrentIndex++;

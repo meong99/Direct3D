@@ -21,8 +21,15 @@ public:
 	void SetInt(uint8 index, int32 value) { _params.SetInt(index, value); }
 	void SetFloat(uint8 index, float value) { _params.SetFloat(index, value); }
 
-	ComPtr<ID3DBlob>	CreateShader(const wstring& path, const string& name, const string& version);
+	void	CreateShader(ShaderInfo shaderInfo);
+	void	Update();
 
 private:
-	MaterialParams		_params = {};
+	void	CreateVertexShader(ComPtr<ID3DBlob>& blob, const wstring& path, const string& name, const string& version);
+	void	CreateIndexShader(ComPtr<ID3DBlob>& blob, const wstring& path, const string& name, const string& version);
+
+	MaterialParams				_params = {};
+	ComPtr<ID3D12PipelineState>	_pipelineState;
+	ComPtr<ID3DBlob>			_vsBlob;
+	ComPtr<ID3DBlob>			_psBlob;
 };

@@ -42,6 +42,18 @@
 #define MINIMUM_ALLOC_SIZE 256
 #define _HAS_STD_BYTE 0
 
+#define DECLARE_SINGLE(type)		\
+private:							\
+	type() {}						\
+	~type() {}						\
+public:								\
+	static type* GetInstance()		\
+	{								\
+		static type instance;		\
+		return &instance;			\
+	}								\
+
+#define GET_SINGLE(type)	type::GetInstance()
 
 /*
  *	Else
@@ -66,8 +78,6 @@ using Vec3		= DirectX::SimpleMath::Vector3;
 using Vec4		= DirectX::SimpleMath::Vector4;
 using Matrix	= DirectX::SimpleMath::Matrix;
 
-extern ComPtr<ID3D12Device>		g_device;
-
 struct WinInfo
 {
 	HWND	hwnd;
@@ -82,7 +92,7 @@ struct Vertex
 	Vec4 color;
 };
 
-struct Transform
+struct TransformMatrix
 {
 	Vec4	offset;
 };
@@ -111,3 +121,5 @@ enum
 	TOTAL_REGISTER_COUNT = CBV_REGISTER_COUNT,
 	TABLE_HEAP_COUNT = TOTAL_REGISTER_COUNT * 5,
 };
+
+extern unique_ptr<class Engine> GEngine;
