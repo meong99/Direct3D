@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Material.h"
-#include "RenderController.h"
 #include "Engine.h"
 
 void Material::CreateShader(ShaderInfo shaderInfo)
@@ -71,7 +70,7 @@ void	Material::CreateIndexShader(ComPtr<ID3DBlob>& blob, const wstring& path, co
 		::MessageBoxA(nullptr, "Shader Create Failed !", nullptr, MB_OK);
 }
 
-void Material::Update()
+void Material::PushData()
 {
 	GEngine->GetCmdList()->SetPipelineState(_pipelineState.Get());
 }

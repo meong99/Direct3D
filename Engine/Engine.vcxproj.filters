@@ -27,6 +27,9 @@
     <Filter Include="Engine\Manager">
       <UniqueIdentifier>{280ff0e8-2a50-4094-bd4b-d84af436d33c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\GameObject\Test">
+      <UniqueIdentifier>{812b2308-ed56-4832-859e-19c9f19212aa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConstantResource.h">
@@ -83,6 +86,12 @@
     <ClInclude Include="Scene.h">
       <Filter>Engine\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Engine\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="TestCameraScript.h">
+      <Filter>Engine\GameObject\Test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -129,6 +138,12 @@
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Engine\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Engine\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="TestCameraScript.cpp">
+      <Filter>Engine\GameObject\Test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

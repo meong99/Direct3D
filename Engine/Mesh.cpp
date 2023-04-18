@@ -54,5 +54,8 @@ void Mesh::Render()
 	GEngine->GetCmdList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	GEngine->GetCmdList()->IASetVertexBuffers(0, 1, &_vertexBufferView);
 	GEngine->GetCmdList()->IASetIndexBuffer(&_indexBufferView);
+
+	GEngine->GetRenderController()->CopyDataToTable();
+
 	GEngine->GetCmdList()->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
 }

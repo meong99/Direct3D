@@ -22,7 +22,7 @@ public:
 	void SetFloat(uint8 index, float value) { _params.SetFloat(index, value); }
 
 	void	CreateShader(ShaderInfo shaderInfo);
-	void	Update();
+	void	PushData();
 
 private:
 	void	CreateVertexShader(ComPtr<ID3DBlob>& blob, const wstring& path, const string& name, const string& version);

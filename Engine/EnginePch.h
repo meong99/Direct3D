@@ -92,9 +92,9 @@ struct Vertex
 	Vec4 color;
 };
 
-struct TransformMatrix
+struct TransformParams
 {
-	Vec4	offset;
+	Matrix	matWVP;
 };
 
 struct ShaderInfo
@@ -122,4 +122,5 @@ enum
 	TABLE_HEAP_COUNT = TOTAL_REGISTER_COUNT * 5,
 };
 
+extern WinInfo g_win_info;
 extern unique_ptr<class Engine> GEngine;

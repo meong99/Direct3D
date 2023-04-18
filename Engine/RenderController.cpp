@@ -3,8 +3,6 @@
 #include "ConstantResource.h"
 #include "SceneManager.h"
 
-extern WinInfo g_win_info;
-
 RenderController::RenderController()
 {
 }
@@ -35,7 +33,7 @@ void RenderController::Init()
 	CreateRTV();
 	CreateDSV();
 	CreateRootSignature();
-	CreateConstant(CBV_REGISTER::b0, sizeof(TransformMatrix), 256);
+	CreateConstant(CBV_REGISTER::b0, sizeof(TransformParams), 256);
 	CreateTableDescHeap();
 
 	WaitSync();
@@ -49,6 +47,31 @@ void RenderController::ResizeWindow(int32 width, int32 height)
 	RECT rect = { 0, 0, width, height };
 	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
 	::SetWindowPos(g_win_info.hwnd, 0, 100, 100, width, height, 0);
+}
+
+void RenderController::CopyDateToContView(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg)
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
+
+	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
+	tableHeapHandle.ptr += (size_t)reg * _CBV_SRV_UAV_IncrementSize;
+
+	uint32	destRange = 1;
+	uint32	srcRange = 1;
+
+	_device->CopyDescriptors(1, &tableHeapHandle, &destRange, 1, &srcHandle, &srcRange,
+							D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void RenderController::CopyDataToTable()
+{
+	D3D12_GPU_DESCRIPTOR_HANDLE	tableGPUHabndle = _tableDescHeap->GetGPUDescriptorHandleForHeapStart();
+
+	tableGPUHabndle.ptr += (size_t)_currentTableIndex * _tableElementSize;
+
+	_cmdList->SetGraphicsRootDescriptorTable(0, tableGPUHabndle);
+
+	_currentTableIndex++;
 }
 
 void RenderController::CreateCommandObject()
@@ -200,9 +223,15 @@ void	RenderController::WaitSync()
 
 void	RenderController::Update()
 {
+	GET_SINGLE(SceneManager)->Update();
+	Render();
+}
+
+void RenderController::Render()
+{
 	RenderBegin();
 
-	GET_SINGLE(SceneManager)->Update();
+	GET_SINGLE(SceneManager)->Render();
 
 	RenderEnd();
 }
@@ -231,17 +260,6 @@ void RenderController::RenderBegin()
 	_cmdList->ClearRenderTargetView(backBufferView, Colors::LightSteelBlue, 0, nullptr);
 	_cmdList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	_cmdList->OMSetRenderTargets(1, &backBufferView, FALSE, &_dsvHandle);
-}
-
-void RenderController::CopyDataToTable()
-{
-	D3D12_GPU_DESCRIPTOR_HANDLE	tableGPUHabndle = _tableDescHeap->GetGPUDescriptorHandleForHeapStart();
-
-	tableGPUHabndle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-
-	_cmdList->SetGraphicsRootDescriptorTable(0, tableGPUHabndle);
-
-	_currentTableIndex++;
 }
 
 void	RenderController::RenderEnd()

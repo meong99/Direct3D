@@ -5,7 +5,7 @@ class ConstantResource
 public:
 	void	CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count);
 	void	ClearIndex();
-	void	CopyDataToConstBuffer(void* data, uint32 size, D3D12_CPU_DESCRIPTOR_HANDLE tableHeapHandle, size_t handleStartPoint);
+	void	CopyDataToConstBuffer(void* data, uint32 size);
 
 private:
 	/*

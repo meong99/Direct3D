@@ -26,13 +26,17 @@ public:
 
 	void	Init();
 	void	Update();
+	void	Render();
 
 	void	ResizeWindow(int32 width, int32 height);
+	void	CopyDateToContView(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg);
+	void	CopyDataToTable();
 
 	ComPtr<ID3D12Device>&				GetDevice() { return	_device; }
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _cmdList; }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _rootSignature; }
 	DXGI_FORMAT&						GetDSVFormat() { return _dsvFormat; }
+	shared_ptr<ConstantResource>		GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
 
 private:
 
@@ -52,7 +56,6 @@ private:
 	 *  Rendering
 	 */
 	void	RenderBegin();
-	void	CopyDataToTable();
 	void	WaitSync();
 	void	RenderEnd();
 	void	ClearHeapIndex();
@@ -60,7 +63,6 @@ private:
 	/*
 	 * Access
 	 */
-	shared_ptr<ConstantResource>	GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
 
 
 	

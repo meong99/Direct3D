@@ -46,7 +46,7 @@ void ConstantResource::ClearIndex()
 	_constBufferCurrentIndex = 0;
 }
 
-void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size, D3D12_CPU_DESCRIPTOR_HANDLE tableHeapHandle, size_t handleStartPoint)
+void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size)
 {
 	assert(_constBufferCurrentIndex < _constBufferElementCount);
 	assert(_constBufferElementSize == ((size + 255) & ~255));
@@ -56,14 +56,8 @@ void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size, D3D12_CPU_
 	D3D12_CPU_DESCRIPTOR_HANDLE	cbvHandle = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
 
 	cbvHandle.ptr += (size_t)_constBufferCurrentIndex * _cbvHandleIncrementSize;
-	tableHeapHandle.ptr += handleStartPoint;
-	tableHeapHandle.ptr += (size_t)_reg * _cbvHandleIncrementSize;
 
-	uint32	destRange = 1;
-	uint32	srcRange = 1;
-
-	GEngine->GetDevice()->CopyDescriptors(1, &tableHeapHandle, &destRange, 1, &cbvHandle, &srcRange,
-							D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	GEngine->GetRenderController()->CopyDateToContView(cbvHandle, _reg);
 
 	_constBufferCurrentIndex++;
 }
