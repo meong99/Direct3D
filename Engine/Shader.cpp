@@ -51,8 +51,7 @@ void	Shader::CreateVertexShader(ComPtr<ID3DBlob>& blob, const wstring& path, con
 #endif
 	ComPtr<ID3DBlob>	err = nullptr;
 
-	HRESULT hr = ::D3DCompileFromFile(path.c_str(), nullptr,
-									  D3D_COMPILE_STANDARD_FILE_INCLUDE,
+	HRESULT hr = ::D3DCompileFromFile(path.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 									  name.c_str(), version.c_str(), compileFlag,
 									  0, &blob, &err);
 	if(err != nullptr)

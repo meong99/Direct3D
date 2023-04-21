@@ -185,6 +185,12 @@
     <None Include="default.hlsli">
       <Filter>Shader</Filter>
     </None>
+    <None Include="utils.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="params.hlsli">
+      <Filter>Shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="WakDoo.png">

@@ -47,7 +47,7 @@ void Scene::FinalUpdate()
 
 void Scene::Render()
 {
-	//PushLightData();
+	PushLightData();
 
 	for (auto& gameObject : _gameObjects)
 	{
