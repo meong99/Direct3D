@@ -32,13 +32,12 @@ void Transform::FinalUpdate()
 
 void Transform::PushData()
 {
-	//TransformParams transformParams = {};
-	//transformParams.matWorld = _matWorld;
-	//transformParams.matView = Camera::S_MatView;
-	//transformParams.matProjection = Camera::S_MatProjection;
-	//transformParams.matWV = _matWorld * Camera::S_MatView;
-	//transformParams.matWVP = _matWorld * Camera::S_MatView * Camera::S_MatProjection;
+	TransformParams transformParams = {};
+	transformParams.matWorld = _matWorld;
+	transformParams.matView = Camera::S_MatView;
+	transformParams.matProjection = Camera::S_MatProjection;
+	transformParams.matWV = _matWorld * Camera::S_MatView;
+	transformParams.matWVP = _matWorld * Camera::S_MatView * Camera::S_MatProjection;
 
-	Matrix matWVP = _matWorld * Camera::S_MatView * Camera::S_MatProjection;
-	GEngine->GetRenderController()->GetConstantResource(CONSTANT_BUFFER_TYPE::TRANSFORM)->PushDataToConstBuffer(&matWVP, sizeof(matWVP));
+	GEngine->GetRenderController()->GetConstantResource(CONSTANT_BUFFER_TYPE::TRANSFORM)->PushDataToConstBuffer(&transformParams, sizeof(transformParams));
 }

@@ -88,5 +88,5 @@ void Scene::PushLightData()
 		lightParams.lightCount++;
 	}
 
-	//GEngine->GetRenderController()->GetConstantResource(CONSTANT_BUFFER_TYPE::GLOBAL)->SetGlobalData(&lightParams, sizeof(lightParams));
+	GEngine->GetRenderController()->GetConstantResource(CONSTANT_BUFFER_TYPE::GLOBAL)->SetGlobalData(&lightParams, sizeof(lightParams));
 }

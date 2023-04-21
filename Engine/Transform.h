@@ -4,10 +4,10 @@
 
 struct TransformParams
 {
-	/*Matrix matWorld;
+	Matrix matWorld;
 	Matrix matView;
 	Matrix matProjection;
-	Matrix matWV;*/
+	Matrix matWV;
 	Matrix matWVP;
 };
 

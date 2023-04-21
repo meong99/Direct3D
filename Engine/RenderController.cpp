@@ -35,9 +35,8 @@ void RenderController::Init()
 	CreateRTV();
 	CreateDSV();
 	CreateRootSignature();
-	//CreateConstant(CBV_REGISTER::b0, sizeof(LightParams), 1);
-	//CreateConstant(CBV_REGISTER::b1, sizeof(TransformParams), 256);
-	CreateConstant(CBV_REGISTER::b0, sizeof(TransformParams), 256);
+	CreateConstant(CBV_REGISTER::b0, sizeof(LightParams), 1);
+	CreateConstant(CBV_REGISTER::b1, sizeof(TransformParams), 256);
 	CreateTableDescHeap();
 
 	WaitSync();
@@ -57,13 +56,12 @@ void RenderController::PushDataToCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_
 {
 	uint8	regNum = static_cast<uint8>(reg);
 
-	//assert(regNum > 0);
+	assert(regNum > 0);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
 
 	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-	tableHeapHandle.ptr += (size_t)(regNum) * _handleIncrementSize;
-	//tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
+	tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
 
 	uint32	destRange = 1;
 	uint32	srcRange = 1;
@@ -76,13 +74,12 @@ void RenderController::PushDataToSRV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, SRV_
 {
 	uint8	regNum = static_cast<uint8>(reg);
 
-	//assert(regNum > 0);
+	assert(regNum > 0);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
 
 	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-	tableHeapHandle.ptr += (size_t)(regNum) * _handleIncrementSize;
-	//tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
+	tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
 
 	uint32	destRange = 1;
 	uint32	srcRange = 1;
@@ -97,8 +94,7 @@ void RenderController::PushDataToTable()
 
 	tableGPUHabndle.ptr += (size_t)_currentTableIndex * _tableElementSize;
 
-	_cmdList->SetGraphicsRootDescriptorTable(0, tableGPUHabndle);
-	//_cmdList->SetGraphicsRootDescriptorTable(1, tableGPUHabndle);
+	_cmdList->SetGraphicsRootDescriptorTable(1, tableGPUHabndle);
 
 	_currentTableIndex++;
 }
@@ -213,15 +209,13 @@ void RenderController::CreateRootSignature()
 
 	CD3DX12_DESCRIPTOR_RANGE	range[] =
 	{
-		//CD3DX12_DESCRIPTOR_RANGE(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, CBV_REGISTER_COUNT - 1, 1),
-		CD3DX12_DESCRIPTOR_RANGE(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, CBV_REGISTER_COUNT, 0),
+		CD3DX12_DESCRIPTOR_RANGE(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, CBV_REGISTER_COUNT - 1, 1),
 		CD3DX12_DESCRIPTOR_RANGE(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, SRV_REGISTER_COUNT, 0)
 	};
 
-	//CD3DX12_ROOT_PARAMETER	param[2];
-	CD3DX12_ROOT_PARAMETER	param[1];
-	//param[0].InitAsConstantBufferView(static_cast<uint32>(CBV_REGISTER::b0));
-	param[0].InitAsDescriptorTable(_countof(range), range);
+	CD3DX12_ROOT_PARAMETER	param[2];
+	param[0].InitAsConstantBufferView(static_cast<uint32>(CBV_REGISTER::b0));
+	param[1].InitAsDescriptorTable(_countof(range), range);
 
 	D3D12_ROOT_SIGNATURE_DESC sigDesc = CD3DX12_ROOT_SIGNATURE_DESC(_countof(param), param, 1, &_samplerDesc);
 	sigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -251,14 +245,13 @@ void RenderController::CreateTableDescHeap()
 	uint32	count = 5;
 
 	tableHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	//tableHeapDesc.NumDescriptors = count * (REGISTER_COUNT - 1);
-	tableHeapDesc.NumDescriptors = count * (REGISTER_COUNT);
+	tableHeapDesc.NumDescriptors = count * (REGISTER_COUNT - 1);
 	tableHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
 	_device->CreateDescriptorHeap(&tableHeapDesc, IID_PPV_ARGS(&_tableDescHeap));
 
 	_tableElementCount = count;
-	_tableElementSize = _handleIncrementSize * (REGISTER_COUNT);
+	_tableElementSize = _handleIncrementSize * (REGISTER_COUNT - 1);
 }
 
 void	RenderController::WaitSync()
