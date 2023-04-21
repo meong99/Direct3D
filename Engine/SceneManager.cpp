@@ -7,7 +7,11 @@
 #include "MeshRenderer.h"
 #include "Camera.h"
 #include "Transform.h"
+#include "Shader.h"
+#include "Texture.h"
 #include "TestCameraScript.h"
+#include "Resources.h"
+#include "Light.h"
 
 void SceneManager::Update()
 {
@@ -21,17 +25,8 @@ void SceneManager::Update()
 
 void SceneManager::Render()
 {
-	if (_activeScene == nullptr)
-		return;
-
-	const vector<shared_ptr<GameObject>>& gameObjects = _activeScene->GetGameObjects();
-	for (auto& gameObject : gameObjects)
-	{
-		if (gameObject->GetCamera() == nullptr)
-			continue;
-
-		gameObject->GetCamera()->Render();
-	}
+	if (_activeScene)
+		_activeScene->Render();
 }
 
 void SceneManager::LoadScene(wstring sceneName)
@@ -47,55 +42,68 @@ void SceneManager::LoadScene(wstring sceneName)
 
 shared_ptr<Scene> SceneManager::LoadTestScene()
 {
-
-#pragma region
-	shared_ptr<Scene>			scene = make_shared<Scene>();
-
-	vector<Vertex> vertex_buffer(4);
-	vertex_buffer[0].pos = Vec3(-0.5f, 0.5f, 0.0f);
-	vertex_buffer[1].pos = Vec3(0.5f, 0.5f, 0.0f);
-	vertex_buffer[2].pos = Vec3(0.5f, -0.5f, 0.0f);
-	vertex_buffer[3].pos = Vec3(-0.5f, -0.5f, 0.0f);
-	vertex_buffer[0].color = Vec4(1.f, 0.f, 0.f, 1.f);
-	vertex_buffer[1].color = Vec4(0.f, 1.f, 0.f, 1.f);
-	vertex_buffer[2].color = Vec4(0.f, 0.f, 1.f, 1.f);
-	vertex_buffer[3].color = Vec4(1.f, 0.f, 0.f, 1.f);
-	vector<uint32> indexBuffer = 
-	{
-		0, 1, 2,
-		0, 2, 3
-	};
-	shared_ptr<GameObject>		gameObject = make_shared<GameObject>();
-	ShaderInfo					shaderInfo = {L"Engine/default.hlsli", "VS_Main", "vs_5_0", "PS_Main", "ps_5_0"};
-	shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
-	shared_ptr<Material>		material = make_shared<Material>();
-	shared_ptr<Mesh>			mesh =  make_shared<Mesh>();
-	shared_ptr<Transform>		transform;
-
-	gameObject->AddComponent(make_shared<Transform>());
-	transform = gameObject->GetTransform();
-	transform->SetLocalPosition(Vec3(0.f, 100.f, 200.f));
-	transform->SetLocalScale(Vec3(100.f, 100.f, 1.f));
-
-	material->CreateShader(shaderInfo);
-	mesh->CreateVertexBuffer(vertex_buffer);
-	mesh->CreateIndexBuffer(indexBuffer);
-	meshRenderer->SetMaterial(material);
-	meshRenderer->SetMesh(mesh);
-	gameObject->AddComponent(meshRenderer);
-
-	scene->AddGameObject(gameObject);
-#pragma endregion
+shared_ptr<Scene> scene = make_shared<Scene>();
 
 #pragma region Camera
-	shared_ptr<GameObject>	camera = make_shared<GameObject>();
-
+	shared_ptr<GameObject> camera = make_shared<GameObject>();
 	camera->AddComponent(make_shared<Transform>());
-	camera->AddComponent(make_shared<Camera>());
+	camera->AddComponent(make_shared<Camera>()); // Near=1, Far=1000, FOV=45µµ
 	camera->AddComponent(make_shared<TestCameraScript>());
 	camera->GetTransform()->SetLocalPosition(Vec3(0.f, 100.f, 0.f));
-
 	scene->AddGameObject(camera);
 #pragma endregion
+
+#pragma region Sphere
+	{
+		shared_ptr<GameObject> sphere = make_shared<GameObject>();
+		sphere->AddComponent(make_shared<Transform>());
+		sphere->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+		sphere->GetTransform()->SetLocalPosition(Vec3(0.f, 100.f, 200.f));
+		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+		{
+			shared_ptr<Mesh> sphereMesh = GET_SINGLE(Resources)->LoadSphereMesh();
+			meshRenderer->SetMesh(sphereMesh);
+		}
+		{
+			shared_ptr<Shader> shader = make_shared<Shader>();
+			shared_ptr<Texture> texture = make_shared<Texture>();
+			shader->Init(L"Engine\\default.hlsli");
+			texture->Init(L"Engine\\WakDoo.png");
+			shared_ptr<Material> material = make_shared<Material>();
+			material->SetShader(shader);
+			material->SetTexture(0, texture);
+			meshRenderer->SetMaterial(material);
+		}
+		sphere->AddComponent(meshRenderer);
+		scene->AddGameObject(sphere);
+	}
+#pragma endregion
+
+#pragma region Cube
+	{
+		shared_ptr<GameObject> sphere = make_shared<GameObject>();
+		sphere->AddComponent(make_shared<Transform>());
+		sphere->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+		sphere->GetTransform()->SetLocalPosition(Vec3(150.f, 100.f, 200.f));
+		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+		{
+			shared_ptr<Mesh> sphereMesh = GET_SINGLE(Resources)->LoadCubeMesh();
+			meshRenderer->SetMesh(sphereMesh);
+		}
+		{
+			shared_ptr<Shader> shader = make_shared<Shader>();
+			shared_ptr<Texture> texture = make_shared<Texture>();
+			shader->Init(L"Engine\\default.hlsli");
+			texture->Init(L"Engine\\WakDoo.png");
+			shared_ptr<Material> material = make_shared<Material>();
+			material->SetShader(shader);
+			material->SetTexture(0, texture);
+			meshRenderer->SetMaterial(material);
+		}
+		sphere->AddComponent(meshRenderer);
+		scene->AddGameObject(sphere);
+	}
+#pragma endregion
+
 	return scene;
 }

@@ -2,6 +2,15 @@
 
 #include "Component.h"
 
+struct TransformParams
+{
+	/*Matrix matWorld;
+	Matrix matView;
+	Matrix matProjection;
+	Matrix matWV;*/
+	Matrix matWVP;
+};
+
 class Transform : public Component
 {
 public:

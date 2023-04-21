@@ -1,11 +1,12 @@
 #include "pch.h"
 #include "GameObject.h"
 #include "Transform.h"
-#include "MonoBehaviour.h"
 #include "MeshRenderer.h"
+#include "MonoBehaviour.h"
 #include "Camera.h"
+#include "Light.h"
 
-GameObject::GameObject()
+GameObject::GameObject() : Object(OBJECT_TYPE::GAMEOBJECT)
 {
 }
 
@@ -106,6 +107,11 @@ shared_ptr<Camera> GameObject::GetCamera()
 	return static_pointer_cast<Camera>(component);
 }
 
+shared_ptr<Light> GameObject::GetLight()
+{
+	shared_ptr<Component> component = GetFixedComponent(COMPONENT_TYPE::LIGHT);
+	return static_pointer_cast<Light>(component);
+}
 
 void GameObject::AddComponent(shared_ptr<Component> component)
 {

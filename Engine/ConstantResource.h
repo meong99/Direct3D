@@ -1,13 +1,29 @@
 #pragma once
 
+enum class CONSTANT_BUFFER_TYPE : uint8
+{
+	//GLOBAL,
+	TRANSFORM,
+	MATERIAL,
+	END
+};
+
+enum
+{
+	CONSTANT_BUFFER_COUNT = static_cast<uint8>(CONSTANT_BUFFER_TYPE::END)
+};
+
 class ConstantResource
 {
 public:
 	void	CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count);
 	void	ClearIndex();
-	void	CopyDataToConstBuffer(void* data, uint32 size);
+	void	PushDataToConstBuffer(void* data, uint32 size);
+	void	SetGlobalData(void* buffer, uint32 size);
 
 private:
+	D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(uint32 index);
+
 	/*
 	 * Constant
 	 */

@@ -1,4 +1,5 @@
 #pragma once
+#define _HAS_STD_BYTE 0
 
 /*
  *	Include
@@ -11,7 +12,11 @@
 #include <array>
 #include <list>
 #include <map>
+using namespace std;
+
 #include <filesystem>
+namespace fs = std::filesystem;
+
 
 #include "d3dx12.h"
 #include <d3d12.h>
@@ -22,12 +27,16 @@
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
 #include <DirectXColors.h>
+using namespace DirectX;
+using namespace DirectX::PackedVector;
+using namespace Microsoft::WRL;
 #include "DirectXTex.h"
 #include "DirectXTex.inl"
 
 /*
  *	Define
  */
+
 
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
@@ -55,16 +64,6 @@ public:								\
 
 #define GET_SINGLE(type)	type::GetInstance()
 
-/*
- *	Else
- */
-
-namespace fs = std::filesystem;
-using namespace std;
-using namespace DirectX;
-using namespace DirectX::PackedVector;
-using namespace Microsoft::WRL;
-
 using int8		= __int8;
 using int16		= __int16;
 using int32		= __int32;
@@ -88,28 +87,37 @@ struct WinInfo
 
 struct Vertex
 {
+	Vertex() {}
+
+	Vertex(Vec3 p, Vec2 u, Vec3 n, Vec3 t)
+		: pos(p), uv(u), normal(n), tangent(t)
+	{
+	}
+
 	Vec3 pos;
-	Vec4 color;
-};
-
-struct TransformParams
-{
-	Matrix	matWVP;
-};
-
-struct ShaderInfo
-{
-	wstring	path;
-	string	verTexName;
-	string	verTexVersion;
-	string	indexName;
-	string	indexVersion;
+	Vec2 uv;
+	Vec3 normal;
+	Vec3 tangent;
 };
 
 enum class CBV_REGISTER
 {
 	b0,
 	b1,
+	b2,
+	b3,
+	b4,
+
+	END
+};
+
+enum class SRV_REGISTER : uint8
+{
+	t0 = static_cast<uint8>(CBV_REGISTER::END),
+	t1,
+	t2,
+	t3,
+	t4,
 
 	END
 };
@@ -118,8 +126,8 @@ enum
 {
 	SWAP_CHAIN_BUFFER_COUNT = 2,
 	CBV_REGISTER_COUNT = CBV_REGISTER::END,
-	TOTAL_REGISTER_COUNT = CBV_REGISTER_COUNT,
-	TABLE_HEAP_COUNT = TOTAL_REGISTER_COUNT * 5,
+	SRV_REGISTER_COUNT = static_cast<uint8>(SRV_REGISTER::END) - CBV_REGISTER_COUNT,
+	REGISTER_COUNT = CBV_REGISTER_COUNT + SRV_REGISTER_COUNT,
 };
 
 extern WinInfo g_win_info;

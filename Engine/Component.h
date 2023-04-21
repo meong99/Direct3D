@@ -1,10 +1,13 @@
 #pragma once
 
+#include "Object.h"
+
 enum class COMPONENT_TYPE : uint8
 {
 	TRANSFORM,
 	MESH_RENDERER,
 	CAMERA,
+	LIGHT,
 	// ...
 	MONO_BEHAVIOUR,
 	END,
@@ -18,7 +21,7 @@ enum
 class GameObject;
 class Transform;
 
-class Component
+class Component : public Object
 {
 public:
 	Component(COMPONENT_TYPE type);

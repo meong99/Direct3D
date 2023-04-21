@@ -1,22 +1,6 @@
 #pragma once
 
-/*
- *	Mesh Rendering 할 때 data와 size를 받는데 이 부분이 CONSTANT_BUFFER_TYPE에 맞아야 한다.
- */
-
-class ConstantResource;
-
-enum class CONSTANT_BUFFER_TYPE : uint8
-{
-	TRANSFORM,
-	MATERIAL,
-	END
-};
-
-enum
-{
-	CONSTANT_BUFFER_COUNT = static_cast<uint8>(CONSTANT_BUFFER_TYPE::END)
-};
+#include "ConstantResource.h"
 
 class RenderController
 {
@@ -29,11 +13,17 @@ public:
 	void	Render();
 
 	void	ResizeWindow(int32 width, int32 height);
-	void	CopyDateToContView(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg);
-	void	CopyDataToTable();
+	void	PushDataToCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg);
+	void	PushDataToSRV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, SRV_REGISTER reg);
+	void	PushDataToTable();
+	void	FlushResourceCommandQueue();
+
+public:
 
 	ComPtr<ID3D12Device>&				GetDevice() { return	_device; }
+	ComPtr<ID3D12CommandQueue>&			GetCmdQueue() { return _cmdQueue; }
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _cmdList; }
+	ComPtr<ID3D12GraphicsCommandList>&	GetResCmdList() { return _resCmdList; }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _rootSignature; }
 	DXGI_FORMAT&						GetDSVFormat() { return _dsvFormat; }
 	shared_ptr<ConstantResource>		GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
@@ -83,6 +73,8 @@ private:
 	ComPtr<ID3D12CommandQueue>			_cmdQueue;
 	ComPtr<ID3D12CommandAllocator>		_cmdAlloc;
 	ComPtr<ID3D12GraphicsCommandList>	_cmdList;
+	ComPtr<ID3D12GraphicsCommandList>	_resCmdList;
+	ComPtr<ID3D12CommandAllocator>		_resCmdAlloc;
 
 	ComPtr<ID3D12Fence>					_fence;
 	uint32								_fenceValue = 0;
@@ -110,12 +102,13 @@ private:
 	 * Root Signature
 	 */
 	ComPtr<ID3D12RootSignature>	_rootSignature;
+	D3D12_STATIC_SAMPLER_DESC	_samplerDesc = {};
 
 	/*
 	 * Constant
 	 */
 	vector<shared_ptr<ConstantResource>>	_constantResource;
-	uint32									_CBV_SRV_UAV_IncrementSize = 0;
+	uint32									_handleIncrementSize = 0;
 
 	/*
 	 *  TableDescHeap

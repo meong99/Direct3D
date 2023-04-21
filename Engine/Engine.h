@@ -47,7 +47,9 @@ public:
 
 	shared_ptr<RenderController>&		GetRenderController() { return _renderController; }
 	ComPtr<ID3D12Device>&				GetDevice() { return	_renderController->GetDevice(); }
+	ComPtr<ID3D12CommandQueue>&			GetCmdQueue() { return _renderController->GetCmdQueue(); }
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _renderController->GetCmdList(); }
+	ComPtr<ID3D12GraphicsCommandList>&	GetResCmdList() { return _renderController->GetResCmdList(); }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _renderController->GetRootSig(); }
 	DXGI_FORMAT&						GetDSVFormat() { return _renderController->GetDSVFormat(); }
 	

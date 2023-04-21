@@ -46,7 +46,7 @@ void ConstantResource::ClearIndex()
 	_constBufferCurrentIndex = 0;
 }
 
-void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size)
+void ConstantResource::PushDataToConstBuffer(void* data, uint32 size)
 {
 	assert(_constBufferCurrentIndex < _constBufferElementCount);
 	assert(_constBufferElementSize == ((size + 255) & ~255));
@@ -57,7 +57,23 @@ void ConstantResource::CopyDataToConstBuffer(void* data, uint32 size)
 
 	cbvHandle.ptr += (size_t)_constBufferCurrentIndex * _cbvHandleIncrementSize;
 
-	GEngine->GetRenderController()->CopyDateToContView(cbvHandle, _reg);
+	GEngine->GetRenderController()->PushDataToCBV(cbvHandle, _reg);
 
 	_constBufferCurrentIndex++;
+}
+
+void ConstantResource::SetGlobalData(void* buffer, uint32 size)
+{
+	assert(_constBufferElementSize == ((size + 255) & ~255));
+	::memcpy(&_constMappedBuffer[0], buffer, size);
+	GEngine->GetCmdList()->SetGraphicsRootConstantBufferView(0, GetGpuVirtualAddress(0));
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ConstantResource::GetGpuVirtualAddress(uint32 index)
+{
+	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = _constBuffer->GetGPUVirtualAddress();
+
+	objCBAddress += index * _constBufferElementSize;
+
+	return objCBAddress;
 }
