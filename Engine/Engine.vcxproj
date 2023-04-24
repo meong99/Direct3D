@@ -223,9 +223,10 @@
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Resources\Shader\default.hlsli" />
-    <None Include="..\Resources\Shader\params.hlsli" />
     <None Include="..\Resources\Shader\utils.hlsli" />
+    <None Include="..\Resources\Shader\params.hlsli" />
+    <None Include="..\Resources\Shader\default.hlsli" />
+    <None Include="..\Resources\Shader\skybox.hlsli" />
     <None Include="DirectXTex.inl" />
     <None Include="SimpleMath.inl" />
   </ItemGroup>
@@ -234,6 +235,7 @@
     <Image Include="..\Resources\Texture\Brick_normal.jpg" />
     <Image Include="..\Resources\Texture\Floor.jpg" />
     <Image Include="..\Resources\Texture\Floor_normal.jpg" />
+    <Image Include="..\Resources\Texture\Sky01.jpg" />
     <Image Include="..\Resources\Texture\veigar.jpg" />
     <Image Include="..\Resources\Texture\WakDoo.png" />
   </ItemGroup>

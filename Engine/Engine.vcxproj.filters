@@ -181,13 +181,16 @@
     <None Include="DirectXTex.inl">
       <Filter>Utils</Filter>
     </None>
+    <None Include="..\Resources\Shader\skybox.hlsli">
+      <Filter>Shader</Filter>
+    </None>
     <None Include="..\Resources\Shader\default.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="..\Resources\Shader\params.hlsli">
+    <None Include="..\Resources\Shader\utils.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="..\Resources\Shader\utils.hlsli">
+    <None Include="..\Resources\Shader\params.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
@@ -208,6 +211,9 @@
       <Filter>Texture</Filter>
     </Image>
     <Image Include="..\Resources\Texture\Brick_normal.jpg">
+      <Filter>Texture</Filter>
+    </Image>
+    <Image Include="..\Resources\Texture\Sky01.jpg">
       <Filter>Texture</Filter>
     </Image>
   </ItemGroup>

@@ -51,6 +51,31 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	scene->AddGameObject(camera);
 #pragma endregion
 
+#pragma region SkyBox
+	{
+		shared_ptr<GameObject> skybox = make_shared<GameObject>();
+
+		skybox->AddComponent(make_shared<Transform>());
+
+		shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
+		shared_ptr<Mesh>			sphereMesh = GET_SINGLE(Resources)->LoadSphereMesh();
+		shared_ptr<Material>		material = make_shared<Material>();
+		shared_ptr<Shader>			shader = make_shared<Shader>();
+		shared_ptr<Texture>			texture = make_shared<Texture>();
+
+		shader->Init(L"Resources\\Shader\\skybox.hlsli",
+			{ RASTERIZER_TYPE::CULL_NONE, DEPTH_STENCIL_TYPE::LESS_EQUAL });
+		texture->Init(L"Resources\\Texture\\Sky01.jpg");
+
+		material->SetShader(shader);
+		material->SetTexture(0, texture);
+		meshRenderer->SetMesh(sphereMesh);
+		meshRenderer->SetMaterial(material);
+		skybox->AddComponent(meshRenderer);
+		scene->AddGameObject(skybox);
+	}
+#pragma endregion
+
 #pragma region Cube
 	{
 		shared_ptr<GameObject> sphere = make_shared<GameObject>();
@@ -61,10 +86,10 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 		shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
 		shared_ptr<Mesh>			sphereMesh = GET_SINGLE(Resources)->LoadCubeMesh();
+		shared_ptr<Material>		material = make_shared<Material>();
 		shared_ptr<Shader>			shader = make_shared<Shader>();
 		shared_ptr<Texture>			texture1 = make_shared<Texture>();
 		shared_ptr<Texture>			texture2 = make_shared<Texture>();
-		shared_ptr<Material>		material = make_shared<Material>();
 		wstring						shaderPath = SHADER_PATH;
 		wstring						texturePath1 = TEXTURE_PATH;
 		wstring						texturePath2 = TEXTURE_PATH;
