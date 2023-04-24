@@ -15,6 +15,8 @@ Material::~Material()
 
 void Material::PushData()
 {
+	GEngine->GetRenderController()->GetConstantResource(CONSTANT_BUFFER_TYPE::MATERIAL)->PushDataToConstBuffer(&_params, sizeof(_params));
+
 	for (size_t i = 0; i < _textures.size(); i++)
 	{
 		if (_textures[i] == nullptr)

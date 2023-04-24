@@ -63,6 +63,8 @@ public:								\
 	}								\
 
 #define GET_SINGLE(type)	type::GetInstance()
+#define TEXTURE_PATH L"Resources\\Texture\\"
+#define SHADER_PATH L"Resources\\Shader\\"
 
 using int8		= __int8;
 using int16		= __int16;

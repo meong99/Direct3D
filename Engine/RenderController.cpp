@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "RenderController.h"
 #include "ConstantResource.h"
+#include "Material.h"
 #include "SceneManager.h"
 #include "Transform.h"
 #include "Light.h"
@@ -37,6 +38,7 @@ void RenderController::Init()
 	CreateRootSignature();
 	CreateConstant(CBV_REGISTER::b0, sizeof(LightParams), 1);
 	CreateConstant(CBV_REGISTER::b1, sizeof(TransformParams), 256);
+	CreateConstant(CBV_REGISTER::b2, sizeof(MaterialParams), 256);
 	CreateTableDescHeap();
 
 	WaitSync();
@@ -302,7 +304,7 @@ void RenderController::RenderBegin()
 
 	D3D12_CPU_DESCRIPTOR_HANDLE backBufferView = _rtvHeapHandle[_backBufferIndex];
 
-	_cmdList->ClearRenderTargetView(backBufferView, Colors::LightSteelBlue, 0, nullptr);
+	_cmdList->ClearRenderTargetView(backBufferView, Colors::Black, 0, nullptr);
 	_cmdList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	_cmdList->OMSetRenderTargets(1, &backBufferView, FALSE, &_dsvHandle);
 }
