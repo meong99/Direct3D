@@ -37,18 +37,68 @@ void SceneManager::LoadScene(wstring sceneName)
 	_activeScene->Start();
 }
 
+uint8 SceneManager::LayerNameToIndex(const wstring& name)
+{
+	auto findIt = _layerIndex.find(name);
+
+	if (findIt == _layerIndex.end())
+		return 0;
+
+	return findIt->second;
+}
+
+void SceneManager::SetLayerName(uint8 index, const wstring& name)
+{
+	const wstring& prevName = _layerNames[index];
+
+	_layerIndex.erase(prevName);
+
+	_layerNames[index] = name;
+	_layerIndex[name] = index;
+}
+
 shared_ptr<Scene> SceneManager::LoadTestScene()
 {
+#pragma region LayerMask
+	SetLayerName(0, L"Default");
+	SetLayerName(1, L"UI");
+#pragma endregion
+
 	shared_ptr<Scene> scene = make_shared<Scene>();
 
-#pragma region Camera
-	shared_ptr<GameObject> camera = make_shared<GameObject>();
+#pragma region MainCamera
+	{
+		shared_ptr<GameObject> camera = make_shared<GameObject>();
 
-	camera->AddComponent(make_shared<Transform>());
-	camera->AddComponent(make_shared<Camera>());
-	camera->AddComponent(make_shared<TestCameraScript>());
-	camera->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-	scene->AddGameObject(camera);
+		camera->SetName(L"Main_Camera");
+		camera->AddComponent(make_shared<Transform>());
+		camera->AddComponent(make_shared<Camera>());
+		camera->AddComponent(make_shared<TestCameraScript>());
+		camera->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+
+		uint8	layerIndex = GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI");
+		camera->GetCamera()->SetCullingMaskLayerOnOff(layerIndex, true);
+
+		scene->AddGameObject(camera);
+	}
+#pragma endregion
+
+#pragma region UI_Camera
+	{
+		shared_ptr<GameObject>	camera = make_shared<GameObject>();
+
+		camera->SetName(L"Orthographic_Camera");
+		camera->AddComponent(make_shared<Transform>());
+		camera->AddComponent(make_shared<Camera>());
+		camera->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+		camera->GetCamera()->SetProjectionType(PROJECTION_TYPE::ORTHOGRAPHIC);
+
+		uint8	layerIndex = GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI");
+		camera->GetCamera()->SetCullingMaskAll();
+		camera->GetCamera()->SetCullingMaskLayerOnOff(layerIndex, false);
+
+		scene->AddGameObject(camera);
+	}
 #pragma endregion
 
 #pragma region SkyBox
@@ -61,12 +111,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
 		shared_ptr<Mesh>			sphereMesh = GET_SINGLE(Resources)->LoadSphereMesh();
 		shared_ptr<Material>		material = make_shared<Material>();
-		shared_ptr<Shader>			shader = make_shared<Shader>();
-		shared_ptr<Texture>			texture = make_shared<Texture>();
-
-		shader->Init(L"Resources\\Shader\\skybox.hlsli",
-			{ RASTERIZER_TYPE::CULL_NONE, DEPTH_STENCIL_TYPE::LESS_EQUAL });
-		texture->Init(L"Resources\\Texture\\Sky01.jpg");
+		shared_ptr<Shader>			shader = GET_SINGLE(Resources)->Get<Shader>(L"Skybox");
+		shared_ptr<Texture>			texture = GET_SINGLE(Resources)->Load<Texture>(L"Sky01", L"Resources\\Texture\\Sky01.jpg");
 
 		material->SetShader(shader);
 		material->SetTexture(0, texture);
@@ -88,20 +134,10 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
 		shared_ptr<Mesh>			sphereMesh = GET_SINGLE(Resources)->LoadCubeMesh();
 		shared_ptr<Material>		material = make_shared<Material>();
-		shared_ptr<Shader>			shader = make_shared<Shader>();
-		shared_ptr<Texture>			texture1 = make_shared<Texture>();
-		shared_ptr<Texture>			texture2 = make_shared<Texture>();
-		wstring						shaderPath = SHADER_PATH;
-		wstring						texturePath1 = TEXTURE_PATH;
-		wstring						texturePath2 = TEXTURE_PATH;
-		
-		shaderPath += L"default.hlsli";
-		texturePath1 += L"Brick.jpg";
-		texturePath2 += L"Brick_normal.jpg";
+		shared_ptr<Shader>			shader = GET_SINGLE(Resources)->Get<Shader>(L"Forward");
+		shared_ptr<Texture>			texture1 = GET_SINGLE(Resources)->Load<Texture>(L"Brick.jpg", L"Resources\\Texture\\Brick.jpg");
+		shared_ptr<Texture>			texture2 = GET_SINGLE(Resources)->Load<Texture>(L"Brick_normal.jpg", L"Resources\\Texture\\Brick_normal.jpg");
 
-		shader->Init(shaderPath);
-		texture1->Init(texturePath1);
-		texture2->Init(texturePath2);
 		material->SetShader(shader);
 		material->SetTexture(0, texture1);
 		material->SetTexture(1, texture2);
@@ -112,58 +148,46 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
-#pragma region Green Directional Light
+#pragma region UI_Test
 	{
-		shared_ptr<GameObject> light = make_shared<GameObject>();
+		shared_ptr<GameObject> sphere = make_shared<GameObject>();
 
-		light->AddComponent(make_shared<Transform>());
-		//light->GetTransform()->SetLocalPosition(Vec3(0.f, 150.f, 150.f));
-		light->AddComponent(make_shared<Light>());
-		light->GetLight()->SetLightDirection(Vec3(1.f, 0.f, 1.f));
-		light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
-		light->GetLight()->SetDiffuse(Vec3(.5f, .5f, .5f));
-		light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
-		light->GetLight()->SetSpecular(Vec3(0.2f, 0.2f, 0.2f));
+		sphere->SetLayerIndex(GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI"));
+		sphere->AddComponent(make_shared<Transform>());
+		sphere->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+		sphere->GetTransform()->SetLocalPosition(Vec3(0, 0, 500.f));
 
-		scene->AddGameObject(light);
+		shared_ptr<MeshRenderer>	meshRenderer = make_shared<MeshRenderer>();
+		shared_ptr<Mesh>			mesh = GET_SINGLE(Resources)->LoadRectangleMesh();
+
+		meshRenderer->SetMesh(mesh);
+
+		shared_ptr<Shader>		shader = GET_SINGLE(Resources)->Get<Shader>(L"Forward");
+		shared_ptr<Texture>		texture = GET_SINGLE(Resources)->Load<Texture>(L"Leather", L"Resources\\Texture\\Floor.jpg");
+		shared_ptr<Material>	material = make_shared<Material>();
+
+		material->SetShader(shader);
+		material->SetTexture(0, texture);
+		meshRenderer->SetMaterial(material);
+		sphere->AddComponent(meshRenderer);
+		scene->AddGameObject(sphere);
 	}
+#pragma endregion
+
+#pragma region Directional Light
+	shared_ptr<GameObject> light = make_shared<GameObject>();
+
+	light->AddComponent(make_shared<Transform>());
+	light->AddComponent(make_shared<Light>());
+	light->GetLight()->SetLightDirection(Vec3(1.f, 0.f, 1.f));
+	light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
+	light->GetLight()->SetDiffuse(Vec3(.5f, .5f, .5f));
+	light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
+	light->GetLight()->SetSpecular(Vec3(0.2f, 0.2f, 0.2f));
+
+	scene->AddGameObject(light);
 
 #pragma endregion
 
-//#pragma region Red Point Light
-//	{
-//		shared_ptr<GameObject> light = make_shared<GameObject>();
-//
-//		light->AddComponent(make_shared<Transform>());
-//		light->GetTransform()->SetLocalPosition(Vec3(150.f, 150.f, 150.f));
-//		light->AddComponent(make_shared<Light>());
-//		//light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 0.f));
-//		light->GetLight()->SetLightType(LIGHT_TYPE::POINT_LIGHT);
-//		light->GetLight()->SetDiffuse(Vec3(0.1f, 0.1f, 0.1f));
-//		light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
-//		light->GetLight()->SetSpecular(Vec3(0.1f, 0.1f, 0.1f));
-//		light->GetLight()->SetLightRange(10000.f);
-//		//light->GetLight()->SetLightAngle(XM_PI / 4);
-//		scene->AddGameObject(light);
-//	}
-//#pragma endregion
-//
-//#pragma region Blue Spot Light
-//	{
-//		shared_ptr<GameObject> light = make_shared<GameObject>();
-//
-//		light->AddComponent(make_shared<Transform>());
-//		light->GetTransform()->SetLocalPosition(Vec3(-150.f, 0.f, 150.f));
-//		light->AddComponent(make_shared<Light>());
-//		light->GetLight()->SetLightDirection(Vec3(1.f, 0.f, 0.f));
-//		light->GetLight()->SetLightType(LIGHT_TYPE::SPOT_LIGHT);
-//		light->GetLight()->SetDiffuse(Vec3(0.f, 0.1f, 0.1f));
-//		//light->GetLight()->SetAmbient(Vec3(0.f, 0.f, 0.1f));
-//		light->GetLight()->SetSpecular(Vec3(0.1f, 0.1f, 0.1f));
-//		light->GetLight()->SetLightRange(10000.f);
-//		light->GetLight()->SetLightAngle(XM_PI / 4);
-//		scene->AddGameObject(light);
-//	}
-//#pragma endregion
 	return scene;
 }

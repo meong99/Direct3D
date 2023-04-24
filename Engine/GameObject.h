@@ -29,13 +29,16 @@ public:
 	shared_ptr<Camera>			GetCamera();
 	shared_ptr<Light>			GetLight();
 	bool						GetCheckFrustum() { return _checkFrustum; }
+	uint8						GetLayerIndex() { return _layerIndex; }
 
 	void	SetCheckFrustum(bool checkFrustum) { _checkFrustum = checkFrustum; }
+	void	SetLayerIndex(uint8 layer) { _layerIndex = layer; }
 
 private:
 	array<shared_ptr<Component>, FIXED_COMPONENT_COUNT>	_components;
 	vector<shared_ptr<MonoBehaviour>>					_scripts;
 
 	bool	_checkFrustum = true;
+	uint8	_layerIndex = 0;
 };
 

@@ -187,18 +187,6 @@
     <None Include="DirectXTex.inl">
       <Filter>Utils</Filter>
     </None>
-    <None Include="..\Resources\Shader\skybox.hlsli">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="..\Resources\Shader\default.hlsli">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="..\Resources\Shader\utils.hlsli">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="..\Resources\Shader\params.hlsli">
-      <Filter>Shader</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\Resources\Texture\Floor.jpg">
@@ -222,5 +210,19 @@
     <Image Include="..\Resources\Texture\Sky01.jpg">
       <Filter>Texture</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\Resources\Shader\forward.fx">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\params.fx">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\skybox.fx">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\utils.fx">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

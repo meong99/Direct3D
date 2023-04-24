@@ -30,14 +30,14 @@ void Camera::FinalUpdate()
 	else
 		_matProjection = ::XMMatrixOrthographicLH(width * _scale, height * _scale, _near, _far);
 
-	S_MatView = _matView;
-	S_MatProjection = _matProjection;
-
 	_frustum.FinalUpdate();
 }
 
 void Camera::Render()
 {
+	S_MatView = _matView;
+	S_MatProjection = _matProjection;
+
 	shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetActiveScene();
 
 	const vector<shared_ptr<GameObject>>& gameObjects = scene->GetGameObjects();
@@ -45,6 +45,9 @@ void Camera::Render()
 	for (auto& gameObject : gameObjects)
 	{
 		if (gameObject->GetMeshRenderer() == nullptr)
+			continue;
+
+		if (IsCulled(gameObject->GetLayerIndex()))
 			continue;
 
 		if (gameObject->GetCheckFrustum())

@@ -2,6 +2,7 @@
 #include "framework.h"
 #include "Engine.h"
 #include "RenderController.h"
+#include "Resources.h"
 
 extern WinInfo g_win_info;
 
@@ -21,6 +22,7 @@ void Engine::Init()
 	::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_prevCount));
 
 	_renderController->Init();
+	GET_SINGLE(Resources)->Init();
 }
 
 void	Engine::Update()
