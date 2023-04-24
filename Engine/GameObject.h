@@ -21,17 +21,21 @@ public:
 	void	LateUpdate();
 	void	FinalUpdate();
 
-	shared_ptr<Component> GetFixedComponent(COMPONENT_TYPE type);
-
-	shared_ptr<Transform> GetTransform();
-	shared_ptr<MeshRenderer> GetMeshRenderer();
-	shared_ptr<Camera> GetCamera();
-	shared_ptr<Light> GetLight();
-
 	void	AddComponent(shared_ptr<Component> component);
+public:
+	shared_ptr<Component>		GetFixedComponent(COMPONENT_TYPE type);
+	shared_ptr<Transform>		GetTransform();
+	shared_ptr<MeshRenderer>	GetMeshRenderer();
+	shared_ptr<Camera>			GetCamera();
+	shared_ptr<Light>			GetLight();
+	bool						GetCheckFrustum() { return _checkFrustum; }
+
+	void	SetCheckFrustum(bool checkFrustum) { _checkFrustum = checkFrustum; }
 
 private:
 	array<shared_ptr<Component>, FIXED_COMPONENT_COUNT>	_components;
 	vector<shared_ptr<MonoBehaviour>>					_scripts;
+
+	bool	_checkFrustum = true;
 };
 

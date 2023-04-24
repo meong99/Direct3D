@@ -32,19 +32,30 @@ void Camera::FinalUpdate()
 
 	S_MatView = _matView;
 	S_MatProjection = _matProjection;
+
+	_frustum.FinalUpdate();
 }
 
 void Camera::Render()
 {
 	shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetActiveScene();
 
-	// TODO : Layer ±¸ºÐ
 	const vector<shared_ptr<GameObject>>& gameObjects = scene->GetGameObjects();
 
 	for (auto& gameObject : gameObjects)
 	{
 		if (gameObject->GetMeshRenderer() == nullptr)
 			continue;
+
+		if (gameObject->GetCheckFrustum())
+		{
+			if (_frustum.ContainsSphere(
+				gameObject->GetTransform()->GetWorldPosition(),
+				gameObject->GetTransform()->GetBoundingSphereRadius()) == false)
+			{
+				continue;
+			}
+		}
 
 		gameObject->GetMeshRenderer()->Render();
 	}

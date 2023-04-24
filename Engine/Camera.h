@@ -1,10 +1,12 @@
 #pragma once
+
 #include "Component.h"
+#include "Frustum.h"
 
 enum class PROJECTION_TYPE
 {
-	PERSPECTIVE, // 원근 투영
-	ORTHOGRAPHIC, // 직교 투영
+	PERSPECTIVE, 
+	ORTHOGRAPHIC,
 };
 
 class Camera : public Component
@@ -26,6 +28,8 @@ private:
 
 	Matrix _matView = {};
 	Matrix _matProjection = {};
+
+	Frustum	_frustum;
 
 public:
 	// TEMP
