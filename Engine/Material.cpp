@@ -23,7 +23,7 @@ void Material::PushData()
 			continue;
 
 		SRV_REGISTER reg = SRV_REGISTER(static_cast<int8>(SRV_REGISTER::t0) + i);
-		GEngine->GetRenderController()->PushDataToSRV(_textures[i]->GetCpuHandle(), reg);
+		GEngine->GetRenderController()->PushDataToSRV(_textures[i]->GetSRVHandle(), reg);
 	}
 	_shader->Update();
 }

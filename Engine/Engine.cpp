@@ -4,7 +4,7 @@
 #include "RenderController.h"
 #include "Resources.h"
 
-extern WinInfo g_win_info;
+extern WinInfo g_winInfo;
 
 Engine::Engine()
 {
@@ -48,7 +48,7 @@ void Engine::UpdateKey()
 {
 	HWND hwnd = ::GetActiveWindow();
 
-	if (g_win_info.hwnd != hwnd)
+	if (g_winInfo.hwnd != hwnd)
 	{
 		for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
 			_states[key] = KEY_STATE::NONE;
@@ -110,5 +110,5 @@ void Engine::ShowFPS()
 	WCHAR text[100] = L"";
 
 	::wsprintf(text, L"FPS : %d", fps);
-	::SetWindowText(g_win_info.hwnd, text);
+	::SetWindowText(g_winInfo.hwnd, text);
 }

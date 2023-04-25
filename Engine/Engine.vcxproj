@@ -136,6 +136,7 @@
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
       <ShaderType>Effect</ShaderType>
+      <EnableDebuggingInformation>true</EnableDebuggingInformation>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -180,6 +181,7 @@
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
       <ShaderType>Effect</ShaderType>
+      <EnableDebuggingInformation>true</EnableDebuggingInformation>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -201,6 +203,7 @@
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MonoBehaviour.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="RenderTargetGroup.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManager.h" />
@@ -231,6 +234,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="RenderTargetGroup.cpp" />
     <ClCompile Include="Resources.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManager.cpp" />
@@ -254,10 +258,21 @@
     <Image Include="..\Resources\Texture\WakDoo.png" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Resources\Shader\forward.fx" />
-    <FxCompile Include="..\Resources\Shader\params.fx" />
-    <FxCompile Include="..\Resources\Shader\skybox.fx" />
-    <FxCompile Include="..\Resources\Shader\utils.fx" />
+    <FxCompile Include="..\Resources\Shader\deferred.fx">
+      <FileType>Document</FileType>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\forward.fx">
+      <FileType>Document</FileType>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\params.fx">
+      <FileType>Document</FileType>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\skybox.fx">
+      <FileType>Document</FileType>
+    </FxCompile>
+    <FxCompile Include="..\Resources\Shader\utils.fx">
+      <FileType>Document</FileType>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

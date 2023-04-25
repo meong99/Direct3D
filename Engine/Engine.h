@@ -53,8 +53,8 @@ public:
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _renderController->GetCmdList(); }
 	ComPtr<ID3D12GraphicsCommandList>&	GetResCmdList() { return _renderController->GetResCmdList(); }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _renderController->GetRootSig(); }
-	DXGI_FORMAT&						GetDSVFormat() { return _renderController->GetDSVFormat(); }
-	
+	shared_ptr<RenderTargetGroup>		GetRTGroup(RENDER_TARGET_GROUP_TYPE type) { return _renderController->GetRTGroup(type); }
+
 	/*
 	 *  Key and Timer
 	 */

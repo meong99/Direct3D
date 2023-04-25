@@ -5,6 +5,8 @@
 #include "SceneManager.h"
 #include "GameObject.h"
 #include "MeshRenderer.h"
+#include "Shader.h"
+#include "Material.h"
 #include "Engine.h"
 
 Matrix Camera::S_MatView;
@@ -22,8 +24,8 @@ void Camera::FinalUpdate()
 {
 	_matView = GetTransform()->GetLocalToWorldMatrix().Invert();
 
-	float width = static_cast<float>(g_win_info.width);
-	float height = static_cast<float>(g_win_info.height);
+	float width = static_cast<float>(g_winInfo.width);
+	float height = static_cast<float>(g_winInfo.height);
 
 	if (_type == PROJECTION_TYPE::PERSPECTIVE)
 		_matProjection = ::XMMatrixPerspectiveFovLH(_fov, width / height, _near, _far);
@@ -33,14 +35,13 @@ void Camera::FinalUpdate()
 	_frustum.FinalUpdate();
 }
 
-void Camera::Render()
+void Camera::SortGameObject()
 {
-	S_MatView = _matView;
-	S_MatProjection = _matProjection;
-
 	shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetActiveScene();
-
 	const vector<shared_ptr<GameObject>>& gameObjects = scene->GetGameObjects();
+
+	_vecForward.clear();
+	_vecDeferred.clear();
 
 	for (auto& gameObject : gameObjects)
 	{
@@ -60,6 +61,37 @@ void Camera::Render()
 			}
 		}
 
+		SHADER_TYPE shaderType = gameObject->GetMeshRenderer()->GetMaterial()->GetShader()->GetShaderType();
+		switch (shaderType)
+		{
+		case SHADER_TYPE::DEFERRED:
+			_vecDeferred.push_back(gameObject);
+			break;
+		case SHADER_TYPE::FORWARD:
+			_vecForward.push_back(gameObject);
+			break;
+		}
+	}
+}
+
+void Camera::Render_Deferred()
+{
+	S_MatView = _matView;
+	S_MatProjection = _matProjection;
+
+	for (auto& gameObject : _vecDeferred)
+	{
+		gameObject->GetMeshRenderer()->Render();
+	}
+}
+
+void Camera::Render_Forward()
+{
+	S_MatView = _matView;
+	S_MatProjection = _matProjection;
+
+	for (auto& gameObject : _vecForward)
+	{
 		gameObject->GetMeshRenderer()->Render();
 	}
 }

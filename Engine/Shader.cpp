@@ -12,6 +12,8 @@ Shader::~Shader()
 
 void Shader::Init(const wstring& path, ShaderInfo info)
 {
+	_info = info;
+
 	CreateVertexShader(_vsBlob, path, "VS_Main", "vs_5_0");
 	CreateIndexShader(_psBlob, path, "PS_Main", "ps_5_0");
 
@@ -33,11 +35,25 @@ void Shader::Init(const wstring& path, ShaderInfo info)
 	pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	pipelineDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	pipelineDesc.SampleMask = UINT_MAX;
-	pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	pipelineDesc.PrimitiveTopologyType = _info.topologyType;
 	pipelineDesc.NumRenderTargets = 1;
 	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	pipelineDesc.SampleDesc.Count = 1;
-	pipelineDesc.DSVFormat =  GEngine->GetDSVFormat();
+	pipelineDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	
+	switch (info.shaderType)
+	{
+	case SHADER_TYPE::DEFERRED:
+		pipelineDesc.NumRenderTargets = RENDER_TARGET_G_BUFFER_GROUP_MEMBER_COUNT;
+		pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // POSITION
+		pipelineDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT; // NORMAL
+		pipelineDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM; // COLOR
+		break;
+	case SHADER_TYPE::FORWARD:
+		pipelineDesc.NumRenderTargets = 1;
+		pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	}
 
 	switch (info.rasterizerType)
 	{

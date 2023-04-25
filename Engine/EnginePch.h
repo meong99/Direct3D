@@ -132,5 +132,5 @@ enum
 	REGISTER_COUNT = CBV_REGISTER_COUNT + SRV_REGISTER_COUNT,
 };
 
-extern WinInfo g_win_info;
+extern WinInfo g_winInfo;
 extern unique_ptr<class Engine> GEngine;

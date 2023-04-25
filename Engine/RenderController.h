@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ConstantResource.h"
+#include "RenderTargetGroup.h"
 
 class RenderController
 {
@@ -25,8 +26,9 @@ public:
 	ComPtr<ID3D12GraphicsCommandList>&	GetCmdList() { return _cmdList; }
 	ComPtr<ID3D12GraphicsCommandList>&	GetResCmdList() { return _resCmdList; }
 	ComPtr<ID3D12RootSignature>&		GetRootSig() { return _rootSignature; }
-	DXGI_FORMAT&						GetDSVFormat() { return _dsvFormat; }
 	shared_ptr<ConstantResource>		GetConstantResource(CONSTANT_BUFFER_TYPE type) {return _constantResource[static_cast<uint8>(type)];}
+	uint8								GetBackBufferIndex() { return _backBufferIndex; }
+	shared_ptr<RenderTargetGroup>		GetRTGroup(RENDER_TARGET_GROUP_TYPE type) { return _rtGroups[static_cast<uint8>(type)]; }
 
 private:
 
@@ -36,12 +38,10 @@ private:
 
 	void	CreateCommandObject();
 	void	CreateSwapChain();
-	void	CreateRTV();
-	void	CreateDSV();
 	void	CreateRootSignature();
 	void	CreateConstant(CBV_REGISTER reg, uint32 size, uint32 count);
 	void	CreateTableDescHeap();
-	
+	void	CreateRenderTargetGroups();
 	/*
 	 *  Rendering
 	 */
@@ -50,12 +50,8 @@ private:
 	void	RenderEnd();
 	void	ClearHeapIndex();
 
-	/*
-	 * Access
-	 */
+private:
 
-
-	
 	D3D12_VIEWPORT	_viewport;
 	D3D12_RECT		_scissorRect;
 
@@ -84,19 +80,7 @@ private:
 	 * SwapChain
 	 */
 	ComPtr<IDXGISwapChain>			_swapChain;
-	ComPtr<ID3D12Resource>			_rtvBuffer[SWAP_CHAIN_BUFFER_COUNT];
-	ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
-	D3D12_CPU_DESCRIPTOR_HANDLE		_rtvHeapHandle[SWAP_CHAIN_BUFFER_COUNT];
 	uint32							_backBufferIndex = 0;
-	uint32							_rtvIncrementSize = 0;
-
-	/*
-	 * DSV
-	 */
-	ComPtr<ID3D12Resource>			_dsvBuffer;
-	ComPtr<ID3D12DescriptorHeap>	_dsvHeap;
-	D3D12_CPU_DESCRIPTOR_HANDLE		_dsvHandle = {};
-	DXGI_FORMAT						_dsvFormat = DXGI_FORMAT_D32_FLOAT;
 
 	/*
 	 * Root Signature
@@ -118,5 +102,9 @@ private:
 	uint32							_tableElementCount = 0;
 	uint32							_currentTableIndex = 0;
 
+	/*
+	 * RenderTargetGroup
+	 */
+	array<shared_ptr<RenderTargetGroup>, RENDER_TARGET_GROUP_COUNT> _rtGroups;
 };
 

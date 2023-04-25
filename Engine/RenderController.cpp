@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "RenderController.h"
+#include "Engine.h"
 #include "ConstantResource.h"
 #include "Material.h"
 #include "SceneManager.h"
 #include "Transform.h"
 #include "Light.h"
+#include "Resources.h"
 
 RenderController::RenderController()
 {
@@ -17,10 +19,10 @@ RenderController::~RenderController()
 
 void RenderController::Init()
 {
-	_viewport = { 0, 0, static_cast<FLOAT>(g_win_info.width), static_cast<FLOAT>(g_win_info.height), 0.0f, 1.0f };
-	_scissorRect = CD3DX12_RECT(0, 0, g_win_info.width, g_win_info.height);
+	_viewport = { 0, 0, static_cast<FLOAT>(g_winInfo.width), static_cast<FLOAT>(g_winInfo.height), 0.0f, 1.0f };
+	_scissorRect = CD3DX12_RECT(0, 0, g_winInfo.width, g_winInfo.height);
 
-	ResizeWindow(g_win_info.width, g_win_info.height);
+	ResizeWindow(g_winInfo.width, g_winInfo.height);
 
 #ifdef DEBUG
 	D3D12GetDebugInterface(IID_PPV_ARGS(&_debug_controller));
@@ -33,8 +35,7 @@ void RenderController::Init()
 
 	CreateCommandObject();
 	CreateSwapChain();
-	CreateRTV();
-	CreateDSV();
+	CreateRenderTargetGroups();
 	CreateRootSignature();
 	CreateConstant(CBV_REGISTER::b0, sizeof(LightParams), 1);
 	CreateConstant(CBV_REGISTER::b1, sizeof(TransformParams), 256);
@@ -46,12 +47,12 @@ void RenderController::Init()
 
 void RenderController::ResizeWindow(int32 width, int32 height)
 {
-	g_win_info.width = width;
-	g_win_info.height = height;
+	g_winInfo.width = width;
+	g_winInfo.height = height;
 
 	RECT rect = { 0, 0, width, height };
 	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-	::SetWindowPos(g_win_info.hwnd, 0, 100, 100, width, height, 0);
+	::SetWindowPos(g_winInfo.hwnd, 0, 100, 100, width, height, 0);
 }
 
 void RenderController::PushDataToCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg)
@@ -137,8 +138,8 @@ void RenderController::CreateSwapChain()
 
 	DXGI_SWAP_CHAIN_DESC	swap_chain_desc;
 
-	swap_chain_desc.BufferDesc.Width = static_cast<uint32>(g_win_info.width);
-	swap_chain_desc.BufferDesc.Height = static_cast<uint32>(g_win_info.height);
+	swap_chain_desc.BufferDesc.Width = static_cast<uint32>(g_winInfo.width);
+	swap_chain_desc.BufferDesc.Height = static_cast<uint32>(g_winInfo.height);
 	swap_chain_desc.BufferDesc.RefreshRate.Numerator = 60;
 	swap_chain_desc.BufferDesc.RefreshRate.Denominator = 1;
 	swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -148,61 +149,12 @@ void RenderController::CreateSwapChain()
 	swap_chain_desc.SampleDesc.Quality = 0;
 	swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swap_chain_desc.BufferCount = SWAP_CHAIN_BUFFER_COUNT;
-	swap_chain_desc.OutputWindow = g_win_info.hwnd;
-	swap_chain_desc.Windowed = g_win_info.windowed;
+	swap_chain_desc.OutputWindow = g_winInfo.hwnd;
+	swap_chain_desc.Windowed = g_winInfo.windowed;
 	swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swap_chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	_dxgi->CreateSwapChain(_cmdQueue.Get(), &swap_chain_desc, &_swapChain);
-
-	for (int32 i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
-		_swapChain->GetBuffer(i, IID_PPV_ARGS(&_rtvBuffer[i]));
-}
-
-void RenderController::CreateRTV()
-{
-	D3D12_DESCRIPTOR_HEAP_DESC rtvDesc;
-
-	rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
-	rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvDesc.NodeMask = 0;
-
-	_device->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&_rtvHeap));
-
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapBegin = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-	_rtvIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	_handleIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
-	{
-		_rtvHeapHandle[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeapBegin, i * _rtvIncrementSize);
-		_device->CreateRenderTargetView(_rtvBuffer[i].Get(), nullptr, _rtvHeapHandle[i]);
-	}
-}
-
-void RenderController::CreateDSV()
-{
-	D3D12_HEAP_PROPERTIES	heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	D3D12_RESOURCE_DESC		resDesc = CD3DX12_RESOURCE_DESC::Tex2D(_dsvFormat, g_win_info.width, g_win_info.height);
-
-	resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-	D3D12_CLEAR_VALUE	optimizedClearvalue = CD3DX12_CLEAR_VALUE(_dsvFormat, 1.f, 0);
-
-	_device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resDesc,
-									D3D12_RESOURCE_STATE_DEPTH_WRITE, &optimizedClearvalue,
-									IID_PPV_ARGS(&_dsvBuffer));
-
-	D3D12_DESCRIPTOR_HEAP_DESC	dsvHeapDesc = {};
-
-	dsvHeapDesc.NumDescriptors = 1;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-
-	_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&_dsvHeap));
-	_dsvHandle = _dsvHeap->GetCPUDescriptorHandleForHeapStart();
-	_device->CreateDepthStencilView(_dsvBuffer.Get(), nullptr, _dsvHandle);
 }
 
 void RenderController::CreateRootSignature()
@@ -256,6 +208,55 @@ void RenderController::CreateTableDescHeap()
 	_tableElementSize = _handleIncrementSize * (REGISTER_COUNT - 1);
 }
 
+void RenderController::CreateRenderTargetGroups()
+{
+	// DepthStencil
+	shared_ptr<Texture> dsTexture = GET_SINGLE(Resources)->CreateTexture(L"DepthStencil",
+		DXGI_FORMAT_D32_FLOAT, g_winInfo.width, g_winInfo.height,
+		CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+	// SwapChain Group
+	{
+		vector<RenderTarget> rtVec(SWAP_CHAIN_BUFFER_COUNT);
+
+		for (uint32 i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i)
+		{
+			wstring name = L"SwapChainTarget_" + std::to_wstring(i);
+
+			ComPtr<ID3D12Resource> resource;
+			_swapChain->GetBuffer(i, IID_PPV_ARGS(&resource));
+			rtVec[i].target = GET_SINGLE(Resources)->CreateTextureFromResource(name, resource);
+		}
+
+		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)] = make_shared<RenderTargetGroup>();
+		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)]->Create(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN, rtVec, dsTexture);
+	}
+
+	// Deferred Group
+	{
+		vector<RenderTarget> rtVec(RENDER_TARGET_G_BUFFER_GROUP_MEMBER_COUNT);
+
+		rtVec[0].target = GET_SINGLE(Resources)->CreateTexture(L"PositionTarget",
+			DXGI_FORMAT_R32G32B32A32_FLOAT, g_winInfo.width, g_winInfo.height,
+			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		rtVec[1].target = GET_SINGLE(Resources)->CreateTexture(L"NormalTarget",
+			DXGI_FORMAT_R32G32B32A32_FLOAT, g_winInfo.width, g_winInfo.height,
+			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		rtVec[2].target = GET_SINGLE(Resources)->CreateTexture(L"DiffuseTarget",
+			DXGI_FORMAT_R8G8B8A8_UNORM, g_winInfo.width, g_winInfo.height,
+			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)] = make_shared<RenderTargetGroup>();
+		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)]->Create(RENDER_TARGET_GROUP_TYPE::G_BUFFER, rtVec, dsTexture);
+	}
+}
+
 void	RenderController::WaitSync()
 {
 	_fenceValue++;
@@ -294,25 +295,19 @@ void RenderController::RenderBegin()
 	_cmdList->SetDescriptorHeaps(1, &tableHeap);
 
 	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		_rtvBuffer[_backBufferIndex].Get(),
+		GEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)->GetRTTexture(_backBufferIndex)->GetTex2D().Get(),
 		D3D12_RESOURCE_STATE_PRESENT, // 화면 출력
 		D3D12_RESOURCE_STATE_RENDER_TARGET); // 외주 결과물
 
 	_cmdList->ResourceBarrier(1, &barrier);
 	_cmdList->RSSetViewports(1, &_viewport);
 	_cmdList->RSSetScissorRects(1, &_scissorRect);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE backBufferView = _rtvHeapHandle[_backBufferIndex];
-
-	_cmdList->ClearRenderTargetView(backBufferView, Colors::Black, 0, nullptr);
-	_cmdList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-	_cmdList->OMSetRenderTargets(1, &backBufferView, FALSE, &_dsvHandle);
 }
 
 void	RenderController::RenderEnd()
 {
 	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		_rtvBuffer[_backBufferIndex].Get(),
+		GEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)->GetRTTexture(_backBufferIndex)->GetTex2D().Get(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PRESENT);
 

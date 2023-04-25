@@ -10,7 +10,7 @@
 HINSTANCE   hInst;                                // 현재 인스턴스입니다.
 WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-WinInfo     g_win_info = {};
+WinInfo     g_winInfo;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -43,9 +43,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-    g_win_info.width = 800;
-    g_win_info.height = 600;
-    g_win_info.windowed = true;
+    g_winInfo.width = 800;
+    g_winInfo.height = 600;
+    g_winInfo.windowed = true;
 
     Game    game;
     game.Init();
@@ -117,7 +117,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    {
       return FALSE;
    }
-   g_win_info.hwnd = hWnd;
+   g_winInfo.hwnd = hWnd;
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
