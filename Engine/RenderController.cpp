@@ -41,7 +41,6 @@ void RenderController::Init()
 	CreateConstant(CBV_REGISTER::b1, sizeof(TransformParams), 256);
 	CreateConstant(CBV_REGISTER::b2, sizeof(MaterialParams), 256);
 	CreateTableDescHeap();
-
 	WaitSync();
 }
 
@@ -62,9 +61,10 @@ void RenderController::PushDataToCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_
 	assert(regNum > 0);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
+	uint32	incrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);;
 
 	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-	tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
+	tableHeapHandle.ptr += (size_t)(regNum - 1) * incrementSize;
 
 	uint32	destRange = 1;
 	uint32	srcRange = 1;
@@ -80,9 +80,10 @@ void RenderController::PushDataToSRV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, SRV_
 	assert(regNum > 0);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE	tableHeapHandle = _tableDescHeap->GetCPUDescriptorHandleForHeapStart();
+	uint32	incrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);;
 
 	tableHeapHandle.ptr += (size_t)_currentTableIndex * _tableElementSize;
-	tableHeapHandle.ptr += (size_t)(regNum - 1) * _handleIncrementSize;
+	tableHeapHandle.ptr += (size_t)(regNum - 1) * incrementSize;
 
 	uint32	destRange = 1;
 	uint32	srcRange = 1;
@@ -197,6 +198,7 @@ void RenderController::CreateTableDescHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC	tableHeapDesc = {};
 	uint32	count = 5;
+	uint32	handleIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);;;
 
 	tableHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	tableHeapDesc.NumDescriptors = count * (REGISTER_COUNT - 1);
@@ -205,18 +207,16 @@ void RenderController::CreateTableDescHeap()
 	_device->CreateDescriptorHeap(&tableHeapDesc, IID_PPV_ARGS(&_tableDescHeap));
 
 	_tableElementCount = count;
-	_tableElementSize = _handleIncrementSize * (REGISTER_COUNT - 1);
+	_tableElementSize = handleIncrementSize * (REGISTER_COUNT - 1);
 }
 
 void RenderController::CreateRenderTargetGroups()
 {
-	// DepthStencil
 	shared_ptr<Texture> dsTexture = GET_SINGLE(Resources)->CreateTexture(L"DepthStencil",
 		DXGI_FORMAT_D32_FLOAT, g_winInfo.width, g_winInfo.height,
 		CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-	// SwapChain Group
 	{
 		vector<RenderTarget> rtVec(SWAP_CHAIN_BUFFER_COUNT);
 
@@ -233,7 +233,6 @@ void RenderController::CreateRenderTargetGroups()
 		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)]->Create(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN, rtVec, dsTexture);
 	}
 
-	// Deferred Group
 	{
 		vector<RenderTarget> rtVec(RENDER_TARGET_G_BUFFER_GROUP_MEMBER_COUNT);
 

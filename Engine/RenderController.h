@@ -92,7 +92,6 @@ private:
 	 * Constant
 	 */
 	vector<shared_ptr<ConstantResource>>	_constantResource;
-	uint32									_handleIncrementSize = 0;
 
 	/*
 	 *  TableDescHeap
